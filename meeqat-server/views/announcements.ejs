@@ -107,5 +107,11 @@
     </div>
   </div>
 </main>
+<script src="/public/js/image-compress.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  setupImageCompression(document.querySelector('form[action="/admin/announcements"]'));
+});
+</script>
 </body>
 </html>

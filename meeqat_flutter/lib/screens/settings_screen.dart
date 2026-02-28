@@ -16,7 +16,10 @@ class SettingsScreen extends StatefulWidget {
 class _SettingsScreenState extends State<SettingsScreen> {
   bool _notificationsEnabled = false;
   final Map<Prayer, bool> _prayerToggles = {};
-  int _minutesBefore = 0;
+  bool _athanAlertsEnabled = true;
+  bool _iqamahAlertsEnabled = false;
+  int _athanMinutesBefore = 0;
+  int _iqamahMinutesBefore = 0;
   bool _loaded = false;
 
   @override
@@ -27,9 +30,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _loadPrefs() async {
     final prefs = await SharedPreferences.getInstance();
+
+    // Migrate old pref if present
+    if (prefs.containsKey('notify_minutes_before')) {
+      final old = prefs.getInt('notify_minutes_before') ?? 0;
+      if (!prefs.containsKey('athan_minutes_before')) {
+        await prefs.setInt('athan_minutes_before', old);
+      }
+      await prefs.remove('notify_minutes_before');
+    }
+
     setState(() {
       _notificationsEnabled = prefs.getBool('notifications_enabled') ?? false;
-      _minutesBefore = prefs.getInt('notify_minutes_before') ?? 0;
+      _athanAlertsEnabled = prefs.getBool('notify_before_athan') ?? true;
+      _iqamahAlertsEnabled = prefs.getBool('notify_before_iqamah') ?? false;
+      _athanMinutesBefore = prefs.getInt('athan_minutes_before') ?? 0;
+      _iqamahMinutesBefore = prefs.getInt('iqamah_minutes_before') ?? 0;
       for (final p in Prayer.mainPrayers) {
         _prayerToggles[p] = prefs.getBool('notify_${p.name}') ?? true;
       }
@@ -68,10 +84,31 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _reschedule();
   }
 
-  Future<void> _setMinutesBefore(int value) async {
+  Future<void> _setAthanAlertsEnabled(bool value) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setInt('notify_minutes_before', value);
-    setState(() => _minutesBefore = value);
+    await prefs.setBool('notify_before_athan', value);
+    setState(() => _athanAlertsEnabled = value);
+    _reschedule();
+  }
+
+  Future<void> _setIqamahAlertsEnabled(bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('notify_before_iqamah', value);
+    setState(() => _iqamahAlertsEnabled = value);
+    _reschedule();
+  }
+
+  Future<void> _setAthanMinutesBefore(int value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt('athan_minutes_before', value);
+    setState(() => _athanMinutesBefore = value);
+    _reschedule();
+  }
+
+  Future<void> _setIqamahMinutesBefore(int value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt('iqamah_minutes_before', value);
+    setState(() => _iqamahMinutesBefore = value);
     _reschedule();
   }
 
@@ -152,8 +189,41 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   if (_notificationsEnabled) ...[
                     Divider(color: AppTheme.creamDark.withValues(alpha: 0.5), height: 20),
 
-                    // Timing selector
-                    _timingSelector(),
+                    // Adhan alerts subsection
+                    _alertSubsection(
+                      icon: Icons.volume_up_rounded,
+                      iconColor: AppTheme.duckDark,
+                      iconBg: AppTheme.duckLight.withValues(alpha: 0.2),
+                      label: 'Adhan Alerts',
+                      subtitle: _athanAlertsEnabled
+                          ? (_athanMinutesBefore == 0 ? 'At adhan time' : '$_athanMinutesBefore min before adhan')
+                          : 'Disabled',
+                      enabled: _athanAlertsEnabled,
+                      onToggle: _setAthanAlertsEnabled,
+                      selectedMinutes: _athanMinutesBefore,
+                      options: [0, 5, 10, 15, 30],
+                      zeroLabel: 'At adhan',
+                      onSelectMinutes: _setAthanMinutesBefore,
+                    ),
+
+                    Divider(color: AppTheme.creamDark.withValues(alpha: 0.5), height: 20),
+
+                    // Iqamah alerts subsection
+                    _alertSubsection(
+                      icon: Icons.timer_outlined,
+                      iconColor: AppTheme.sageDark,
+                      iconBg: AppTheme.sage.withValues(alpha: 0.15),
+                      label: 'Iqamah Alerts',
+                      subtitle: _iqamahAlertsEnabled
+                          ? (_iqamahMinutesBefore == 0 ? 'At iqamah time' : '$_iqamahMinutesBefore min before iqamah')
+                          : 'Disabled',
+                      enabled: _iqamahAlertsEnabled,
+                      onToggle: _setIqamahAlertsEnabled,
+                      selectedMinutes: _iqamahMinutesBefore,
+                      options: [0, 5, 10, 15],
+                      zeroLabel: 'At iqamah',
+                      onSelectMinutes: _setIqamahMinutesBefore,
+                    ),
 
                     Divider(color: AppTheme.creamDark.withValues(alpha: 0.5), height: 20),
 
@@ -178,8 +248,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
               child: Column(
                 children: [
                   _aboutRow(Icons.info_outline_rounded, 'Version', '1.0.0'),
-                  Divider(color: AppTheme.creamDark, height: 24),
-                  _aboutRow(Icons.code_rounded, 'Built with', 'Flutter'),
                   Divider(color: AppTheme.creamDark, height: 24),
                   _aboutRow(Icons.favorite_rounded, 'Made with', 'Love', valueColor: const Color(0xFFE88B8B)),
                 ],
@@ -248,71 +316,85 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  // ── Timing selector ──
+  // ── Alert subsection (adhan / iqamah) ──
 
-  Widget _timingSelector() {
-    final options = [0, 5, 10, 15, 30];
-
+  Widget _alertSubsection({
+    required IconData icon,
+    required Color iconColor,
+    required Color iconBg,
+    required String label,
+    required String subtitle,
+    required bool enabled,
+    required ValueChanged<bool> onToggle,
+    required int selectedMinutes,
+    required List<int> options,
+    required String zeroLabel,
+    required ValueChanged<int> onSelectMinutes,
+  }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            Container(
-              width: 40, height: 40,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(12),
-                color: AppTheme.duckLight.withValues(alpha: 0.2),
-              ),
-              child: const Icon(Icons.timer_outlined, size: 20, color: AppTheme.duckDark),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text('Notify', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppTheme.charcoal)),
-                  const SizedBox(height: 1),
-                  Text(
-                    _minutesBefore == 0 ? 'At athan time' : '$_minutesBefore min before athan',
-                    style: TextStyle(fontSize: 11, color: AppTheme.muted.withValues(alpha: 0.6)),
-                  ),
-                ],
-              ),
-            ),
-          ],
+        _toggleRow(
+          icon: icon,
+          iconColor: iconColor,
+          iconBg: iconBg,
+          label: label,
+          subtitle: subtitle,
+          value: enabled,
+          onChanged: onToggle,
         ),
-        const SizedBox(height: 10),
-        Wrap(
-          spacing: 8,
-          children: options.map((min) {
-            final selected = _minutesBefore == min;
-            final label = min == 0 ? 'At athan' : '${min}m before';
-            return GestureDetector(
-              onTap: () => _setMinutesBefore(min),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-                decoration: BoxDecoration(
-                  color: selected ? AppTheme.gold.withValues(alpha: 0.12) : AppTheme.cream,
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(
-                    color: selected ? AppTheme.gold.withValues(alpha: 0.4) : AppTheme.creamDark.withValues(alpha: 0.5),
-                  ),
-                ),
-                child: Text(
-                  label,
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-                    color: selected ? AppTheme.goldDark : AppTheme.muted,
-                  ),
-                ),
-              ),
-            );
-          }).toList(),
-        ),
+        if (enabled) ...[
+          const SizedBox(height: 10),
+          _buildTimingChips(
+            options: options,
+            selectedMinutes: selectedMinutes,
+            zeroLabel: zeroLabel,
+            onSelect: onSelectMinutes,
+          ),
+        ],
       ],
+    );
+  }
+
+  // ── Reusable timing chips ──
+
+  Widget _buildTimingChips({
+    required List<int> options,
+    required int selectedMinutes,
+    required String zeroLabel,
+    required ValueChanged<int> onSelect,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 54),
+      child: Wrap(
+        spacing: 8,
+        children: options.map((min) {
+          final selected = selectedMinutes == min;
+          final label = min == 0 ? zeroLabel : '${min}m before';
+          return GestureDetector(
+            onTap: () => onSelect(min),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+              decoration: BoxDecoration(
+                color: selected ? AppTheme.gold.withValues(alpha: 0.12) : AppTheme.cream,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(
+                  color: selected ? AppTheme.gold.withValues(alpha: 0.4) : AppTheme.creamDark.withValues(alpha: 0.5),
+                ),
+              ),
+              child: Text(
+                label,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                  color: selected ? AppTheme.goldDark : AppTheme.muted,
+                ),
+              ),
+            ),
+          );
+        }).toList(),
+      ),
     );
   }
 

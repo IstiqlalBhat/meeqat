@@ -7,7 +7,7 @@ const { bucket } = require('../db/firebase');
 const { requireAuth, loadMasjid, requireMasjid } = require('../middleware/auth');
 
 const router = express.Router();
-const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 20 * 1024 * 1024 } });
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 4 * 1024 * 1024 } });
 
 router.use(requireAuth);
 router.use(loadMasjid);

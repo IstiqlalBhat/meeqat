@@ -43,6 +43,17 @@ class NotificationService {
     return true;
   }
 
+  /// Migrate old `notify_minutes_before` pref to `athan_minutes_before`.
+  static Future<void> _migratePrefs(SharedPreferences prefs) async {
+    if (prefs.containsKey('notify_minutes_before')) {
+      final old = prefs.getInt('notify_minutes_before') ?? 0;
+      if (!prefs.containsKey('athan_minutes_before')) {
+        await prefs.setInt('athan_minutes_before', old);
+      }
+      await prefs.remove('notify_minutes_before');
+    }
+  }
+
   static Future<void> schedulePrayerNotifications(List<PrayerTime> prayerTimes) async {
     await _plugin.cancelAll();
 
@@ -50,8 +61,14 @@ class NotificationService {
     final enabled = prefs.getBool('notifications_enabled') ?? false;
     if (!enabled) return;
 
+    await _migratePrefs(prefs);
+
     final now = DateTime.now();
-    final minutesBefore = prefs.getInt('notify_minutes_before') ?? 0;
+
+    final athanAlertsOn = prefs.getBool('notify_before_athan') ?? true;
+    final iqamahAlertsOn = prefs.getBool('notify_before_iqamah') ?? false;
+    final athanMinutes = prefs.getInt('athan_minutes_before') ?? 0;
+    final iqamahMinutes = prefs.getInt('iqamah_minutes_before') ?? 0;
 
     for (final pt in prayerTimes) {
       if (pt.prayer == Prayer.sunrise || pt.prayer == Prayer.sunset) continue;
@@ -60,20 +77,41 @@ class NotificationService {
       final prayerEnabled = prefs.getBool(key) ?? true;
       if (!prayerEnabled) continue;
 
-      final athanDate = pt.athanDate;
-      if (athanDate == null || athanDate.isBefore(now)) continue;
+      // Adhan notification
+      if (athanAlertsOn) {
+        final athanDate = pt.athanDate;
+        if (athanDate != null && athanDate.isAfter(now)) {
+          final notifyAt = athanDate.subtract(Duration(minutes: athanMinutes));
+          if (notifyAt.isAfter(now)) {
+            await _scheduleOne(
+              id: pt.prayer.index * 10,
+              title: '${pt.prayer.displayName} (${pt.prayer.arabicName})',
+              body: athanMinutes > 0
+                  ? '${pt.prayer.displayName} adhan in $athanMinutes minutes'
+                  : 'Time for ${pt.prayer.displayName} adhan',
+              dateTime: notifyAt,
+            );
+          }
+        }
+      }
 
-      final notifyAt = athanDate.subtract(Duration(minutes: minutesBefore));
-      if (notifyAt.isBefore(now)) continue;
-
-      await _scheduleOne(
-        id: pt.prayer.index * 10,
-        title: '${pt.prayer.displayName} (${pt.prayer.arabicName})',
-        body: minutesBefore > 0
-            ? '${pt.prayer.displayName} in $minutesBefore minutes'
-            : 'Time for ${pt.prayer.displayName} prayer',
-        dateTime: notifyAt,
-      );
+      // Iqamah notification
+      if (iqamahAlertsOn) {
+        final iqamahDate = pt.iqamahDate;
+        if (iqamahDate != null && iqamahDate.isAfter(now)) {
+          final notifyAt = iqamahDate.subtract(Duration(minutes: iqamahMinutes));
+          if (notifyAt.isAfter(now)) {
+            await _scheduleOne(
+              id: pt.prayer.index * 10 + 1,
+              title: '${pt.prayer.displayName} (${pt.prayer.arabicName})',
+              body: iqamahMinutes > 0
+                  ? '${pt.prayer.displayName} iqamah in $iqamahMinutes minutes'
+                  : 'Time for ${pt.prayer.displayName} iqamah',
+              dateTime: notifyAt,
+            );
+          }
+        }
+      }
     }
   }
 
