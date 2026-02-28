@@ -62,7 +62,17 @@ class _PrayerScreenState extends State<PrayerScreen> with SingleTickerProviderSt
           return _emptyState();
         }
 
-        return LayoutBuilder(
+        return GestureDetector(
+          onHorizontalDragEnd: (details) {
+            final vel = details.primaryVelocity ?? 0;
+            if (vel.abs() < 300) return;
+            if (vel < 0) {
+              provider.goToNextDay();
+            } else {
+              provider.goToPreviousDay();
+            }
+          },
+          child: LayoutBuilder(
           builder: (context, constraints) {
             return RefreshIndicator(
               color: cs.goldAccent,
@@ -79,8 +89,10 @@ class _PrayerScreenState extends State<PrayerScreen> with SingleTickerProviderSt
                         const SizedBox(height: 8),
                         const OrnamentDivider(),
                         const SizedBox(height: 10),
-                        _countdownBar(provider),
-                        const SizedBox(height: 12),
+                        if (provider.isViewingToday) ...[
+                          _countdownBar(provider),
+                          const SizedBox(height: 12),
+                        ],
                         _prayerCard(provider),
                         const SizedBox(height: 10),
                         if (provider.isFriday && provider.jumuah != null) ...[
@@ -117,6 +129,7 @@ class _PrayerScreenState extends State<PrayerScreen> with SingleTickerProviderSt
               ),
             );
           },
+        ),
         );
       },
     );
@@ -128,7 +141,7 @@ class _PrayerScreenState extends State<PrayerScreen> with SingleTickerProviderSt
 
   Widget _header(PrayerProvider p) {
     final cs = Theme.of(context).colorScheme;
-    final hijri = HijriCalendar.now();
+    final hijri = HijriCalendar.fromDate(p.selectedDate);
     final hijriStr = '${hijri.hDay} ${hijri.longMonthName} ${hijri.hYear} AH';
 
     return Column(
@@ -138,9 +151,28 @@ class _PrayerScreenState extends State<PrayerScreen> with SingleTickerProviderSt
           style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 3, color: cs.goldDarkAccent),
         ),
         const SizedBox(height: 4),
-        Text(
-          _fmtDate(p.currentDate),
-          style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: cs.onSurface, letterSpacing: -0.3),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            GestureDetector(
+              onTap: p.goToPreviousDay,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                child: Icon(Icons.chevron_left_rounded, size: 22, color: cs.hintText),
+              ),
+            ),
+            Text(
+              _fmtDate(p.selectedDate),
+              style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: cs.onSurface, letterSpacing: -0.3),
+            ),
+            GestureDetector(
+              onTap: p.goToNextDay,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                child: Icon(Icons.chevron_right_rounded, size: 22, color: cs.hintText),
+              ),
+            ),
+          ],
         ),
         const SizedBox(height: 3),
         Row(
@@ -164,6 +196,23 @@ class _PrayerScreenState extends State<PrayerScreen> with SingleTickerProviderSt
             ],
           ],
         ),
+        if (!p.isViewingToday) ...[
+          const SizedBox(height: 6),
+          GestureDetector(
+            onTap: p.goToToday,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+              decoration: BoxDecoration(
+                color: cs.goldAccent.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                'Today',
+                style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: cs.goldDarkAccent),
+              ),
+            ),
+          ),
+        ],
       ],
     );
   }
@@ -180,8 +229,9 @@ class _PrayerScreenState extends State<PrayerScreen> with SingleTickerProviderSt
     final cs = Theme.of(context).colorScheme;
     final prayer = p.nextPrayer!;
     final rem = p.timeToNextPrayer!;
-    final accent = prayer.prayer.accentDark;
-    final accentLight = prayer.prayer.accentLight;
+    final brightness = Theme.of(context).brightness;
+    final accent = prayer.prayer.accentFor(brightness);
+    final accentLight = prayer.prayer.accentLightFor(brightness);
     final gap = p.gapToNextPrayer;
     final progress = 1.0 - (rem.inSeconds / gap).clamp(0.0, 1.0);
 
@@ -324,9 +374,18 @@ class _PrayerScreenState extends State<PrayerScreen> with SingleTickerProviderSt
           // Prayer rows
           ...List.generate(prayers.length, (i) {
             final pt = prayers[i];
-            final isNext = p.nextPrayer?.prayer == pt.prayer;
-            final isCurrent = p.currentPrayer == pt.prayer;
-            final isPast = !isNext && !isCurrent && pt.athanDate != null && pt.athanDate!.isBefore(DateTime.now());
+            final bool isNext;
+            final bool isCurrent;
+            final bool isPast;
+            if (p.isViewingToday) {
+              isNext = p.nextPrayer?.prayer == pt.prayer;
+              isCurrent = p.currentPrayer == pt.prayer;
+              isPast = !isNext && !isCurrent && pt.athanDate != null && pt.athanDate!.isBefore(DateTime.now());
+            } else {
+              isNext = false;
+              isCurrent = false;
+              isPast = false;
+            }
             return _prayerRow(pt, isNext: isNext, isCurrent: isCurrent, isPast: isPast, isLast: i == prayers.length - 1);
           }),
           // Sun strip
@@ -361,8 +420,9 @@ class _PrayerScreenState extends State<PrayerScreen> with SingleTickerProviderSt
 
   Widget _prayerRow(PrayerTime pt, {required bool isNext, required bool isCurrent, required bool isPast, required bool isLast}) {
     final cs = Theme.of(context).colorScheme;
-    final accent = pt.prayer.accentDark;
-    final accentLight = pt.prayer.accentLight;
+    final brightness = Theme.of(context).brightness;
+    final accent = pt.prayer.accentFor(brightness);
+    final accentLight = pt.prayer.accentLightFor(brightness);
     final dim = isPast ? 0.45 : 1.0;
 
     return AnimatedBuilder(
@@ -404,12 +464,15 @@ class _PrayerScreenState extends State<PrayerScreen> with SingleTickerProviderSt
                     Expanded(
                       child: Row(
                         children: [
-                          Text(
-                            pt.prayer.displayName,
-                            style: TextStyle(
-                              fontSize: 15,
-                              fontWeight: isNext || isCurrent ? FontWeight.w700 : FontWeight.w600,
-                              color: cs.onSurface.withValues(alpha: dim),
+                          Flexible(
+                            child: Text(
+                              pt.prayer.displayName,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: isNext || isCurrent ? FontWeight.w700 : FontWeight.w600,
+                                color: cs.onSurface.withValues(alpha: dim),
+                              ),
                             ),
                           ),
                           const SizedBox(width: 5),
@@ -470,8 +533,9 @@ class _PrayerScreenState extends State<PrayerScreen> with SingleTickerProviderSt
   /// Beautiful prayer-specific icon badges
   Widget _prayerIcon(Prayer prayer, {required bool isNext, required bool isCurrent, required bool isPast}) {
     final cs = Theme.of(context).colorScheme;
-    final accent = prayer.accentDark;
-    final accentLight = prayer.accentLight;
+    final brightness = Theme.of(context).brightness;
+    final accent = prayer.accentFor(brightness);
+    final accentLight = prayer.accentLightFor(brightness);
     const size = 34.0;
 
     if (isNext) {

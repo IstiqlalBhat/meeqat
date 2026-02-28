@@ -40,7 +40,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       context: context,
       displayName: prayer.displayName,
       arabicName: prayer.arabicName,
-      accentColor: prayer.accentDark,
+      accentColor: prayer.accentFor(Theme.of(context).brightness),
       currentAdhanTiming: provider.getNotificationTiming('adhan_${prayer.name}'),
       currentIqamahTiming: provider.getNotificationTiming('iqamah_${prayer.name}'),
       prayerName: prayer.name,
@@ -345,9 +345,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
               width: 34, height: 34,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(10),
-                color: prayer.accentLight.withValues(alpha: isActive ? 0.2 : 0.1),
+                color: prayer.accentLightFor(cs.brightness).withValues(alpha: isActive ? 0.2 : 0.1),
               ),
-              child: Icon(prayer.icon, size: 16, color: prayer.accentDark.withValues(alpha: isActive ? 0.8 : 0.3)),
+              child: Icon(prayer.icon, size: 16, color: prayer.accentFor(cs.brightness).withValues(alpha: isActive ? 0.8 : 0.3)),
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -374,7 +374,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w500,
-                color: isActive ? prayer.accentDark : cs.hintText.withValues(alpha: 0.5),
+                color: isActive ? prayer.accentFor(cs.brightness) : cs.hintText.withValues(alpha: 0.5),
               ),
             ),
             const SizedBox(width: 4),

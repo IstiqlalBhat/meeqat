@@ -14,6 +14,7 @@ class PrayerProvider extends ChangeNotifier {
   bool isLoading = false;
   String? errorMessage;
   DateTime currentDate = DateTime.now();
+  DateTime selectedDate = DateTime.now();
   Timer? _timer;
 
   // Settings
@@ -25,9 +26,25 @@ class PrayerProvider extends ChangeNotifier {
   bool notificationsEnabled = false;
   Map<String, int> notificationTimings = {};
 
+  bool get isViewingToday {
+    final now = DateTime.now();
+    return selectedDate.year == now.year &&
+        selectedDate.month == now.month &&
+        selectedDate.day == now.day;
+  }
+
   PrayerProvider() {
     _timer = Timer.periodic(const Duration(seconds: 1), (_) {
-      currentDate = DateTime.now();
+      final now = DateTime.now();
+      // Midnight rollover: if viewing today and the day changed, update and reload
+      if (isViewingToday && currentDate.day != now.day) {
+        selectedDate = now;
+        currentDate = now;
+        notifyListeners();
+        loadTimes();
+        return;
+      }
+      currentDate = now;
       notifyListeners();
     });
     _loadSettings();
@@ -45,6 +62,7 @@ class PrayerProvider extends ChangeNotifier {
       prayerTimes.where((p) => p.prayer.hasIqamah).toList();
 
   PrayerTime? get nextPrayer {
+    if (!isViewingToday) return null;
     final now = DateTime.now();
     for (final pt in fivePrayers) {
       final date = pt.athanDate;
@@ -94,6 +112,7 @@ class PrayerProvider extends ChangeNotifier {
   }
 
   Prayer? get currentPrayer {
+    if (!isViewingToday) return null;
     final now = DateTime.now();
     Prayer? current;
     for (final pt in prayerTimes) {
@@ -104,7 +123,7 @@ class PrayerProvider extends ChangeNotifier {
     return current;
   }
 
-  bool get isFriday => DateTime.now().weekday == DateTime.friday;
+  bool get isFriday => selectedDate.weekday == DateTime.friday;
 
   PrayerTime? get sunrise =>
       prayerTimes.where((p) => p.prayer == Prayer.sunrise).firstOrNull;
@@ -182,17 +201,40 @@ class PrayerProvider extends ChangeNotifier {
 
     try {
       final service = BackendService(baseUrl: backendUrl);
-      final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
-      prayerTimes = await service.fetchTimes(selectedMasjidId, date: today);
+      final dateStr = DateFormat('yyyy-MM-dd').format(selectedDate);
+      prayerTimes = await service.fetchTimes(selectedMasjidId, date: dateStr);
       jumuah = await service.fetchJumuah(selectedMasjidId);
       announcements = await service.fetchAnnouncements(selectedMasjidId);
-      // Schedule notifications for today's prayers
-      NotificationService.schedulePrayerNotifications(prayerTimes, jumuah: jumuah);
+      // Only schedule notifications when viewing today
+      if (isViewingToday) {
+        NotificationService.schedulePrayerNotifications(prayerTimes, jumuah: jumuah);
+      }
     } catch (e) {
       errorMessage = 'Unable to fetch prayer times';
     }
 
     isLoading = false;
     notifyListeners();
+  }
+
+  // ── Date navigation ──
+
+  void goToDate(DateTime date) {
+    selectedDate = DateTime(date.year, date.month, date.day);
+    notifyListeners();
+    loadTimes();
+  }
+
+  void goToNextDay() {
+    goToDate(selectedDate.add(const Duration(days: 1)));
+  }
+
+  void goToPreviousDay() {
+    goToDate(selectedDate.subtract(const Duration(days: 1)));
+  }
+
+  void goToToday() {
+    final now = DateTime.now();
+    goToDate(DateTime(now.year, now.month, now.day));
   }
 }

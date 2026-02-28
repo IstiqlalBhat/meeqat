@@ -59,8 +59,9 @@ class _PrayerRowCardState extends State<PrayerRowCard>
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    final accent = widget.prayerTime.prayer.accentDark;
-    final accentLight = widget.prayerTime.prayer.accentLight;
+    final brightness = Theme.of(context).brightness;
+    final accent = widget.prayerTime.prayer.accentFor(brightness);
+    final accentLight = widget.prayerTime.prayer.accentLightFor(brightness);
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),

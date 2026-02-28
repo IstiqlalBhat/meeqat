@@ -1,0 +1,439 @@
+<%- include('partials/head') %>
+<%- include('partials/header') %>
+
+<main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+  <div class="flex gap-8">
+    <%- include('partials/sidebar') %>
+
+    <div class="flex-1 min-w-0">
+      <div class="mb-6">
+        <a href="/admin" class="inline-flex items-center gap-1 text-muted text-sm hover:text-charcoal transition-colors">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+          Dashboard
+        </a>
+        <h1 class="text-xl sm:text-2xl font-semibold text-charcoal mt-2">Monthly Prayer Times</h1>
+        <p class="text-muted text-sm mt-1"><%= masjid.name %></p>
+      </div>
+
+      <!-- Mobile notice (phones only) -->
+      <div class="sm:hidden bg-gold-300/20 border border-gold-400/30 rounded-xl px-4 py-3 mb-6">
+        <p class="text-sm text-gold-600">
+          The monthly grid works best on larger screens.
+          <a href="/admin/timings" class="underline font-medium">Use the single-day editor</a> on mobile.
+        </p>
+      </div>
+
+      <!-- Month/Year selector -->
+      <div class="bg-white rounded-2xl shadow-sm border border-cream-200 p-4 mb-6">
+        <div class="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+          <div class="flex items-center gap-2">
+            <%
+              var prevMonth = month - 1, prevYear = year;
+              if (prevMonth < 1) { prevMonth = 12; prevYear--; }
+              var nextMonth = month + 1, nextYear = year;
+              if (nextMonth > 12) { nextMonth = 1; nextYear++; }
+              var monthNames = ['','January','February','March','April','May','June','July','August','September','October','November','December'];
+            %>
+            <a href="/admin/monthly-timings?month=<%= prevMonth %>&year=<%= prevYear %>"
+              class="p-2 rounded-lg hover:bg-cream-100 text-muted hover:text-charcoal transition-colors">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+            </a>
+            <select id="month-select" onchange="navigateMonth()"
+              class="px-3 py-2 rounded-xl border border-cream-200 bg-cream-50 text-charcoal focus:outline-none focus:ring-2 focus:ring-gold-400 text-sm font-medium">
+              <% for (var m = 1; m <= 12; m++) { %>
+                <option value="<%= m %>" <%= m === month ? 'selected' : '' %>><%= monthNames[m] %></option>
+              <% } %>
+            </select>
+            <select id="year-select" onchange="navigateMonth()"
+              class="px-3 py-2 rounded-xl border border-cream-200 bg-cream-50 text-charcoal focus:outline-none focus:ring-2 focus:ring-gold-400 text-sm font-medium">
+              <% var curYear = new Date().getFullYear(); for (var y = curYear - 1; y <= curYear + 2; y++) { %>
+                <option value="<%= y %>" <%= y === year ? 'selected' : '' %>><%= y %></option>
+              <% } %>
+            </select>
+            <a href="/admin/monthly-timings?month=<%= nextMonth %>&year=<%= nextYear %>"
+              class="p-2 rounded-lg hover:bg-cream-100 text-muted hover:text-charcoal transition-colors">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+            </a>
+          </div>
+          <div class="flex items-center gap-3 sm:ml-auto">
+            <a href="/admin/timings" class="text-sm text-duck-500 hover:text-duck-400 transition-colors font-medium">Single-day editor</a>
+            <span class="text-xs text-muted">
+              Method: <%= ['Shia', 'MWL', 'ISNA', 'Egyptian', 'Umm Al-Qura', 'Karachi'][masjid.calculation_method] || 'Unknown' %>
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Helper actions bar -->
+      <div class="flex flex-wrap items-center gap-3 mb-4">
+        <span id="change-counter" class="text-xs text-muted hidden">
+          <span class="inline-block w-2 h-2 rounded-full bg-gold-400 mr-1"></span>
+          <span id="change-count">0</span> unsaved changes
+        </span>
+        <div class="flex items-center gap-2 ml-auto">
+          <button type="button" onclick="applyToRemaining()" class="text-xs px-3 py-1.5 rounded-lg bg-cream-100 text-muted hover:bg-cream-200 hover:text-charcoal transition-colors">
+            Copy selected row down
+          </button>
+          <button type="button" onclick="clearAllOverrides()" class="text-xs px-3 py-1.5 rounded-lg bg-cream-100 text-muted hover:bg-cream-200 hover:text-charcoal transition-colors">
+            Clear all overrides
+          </button>
+        </div>
+      </div>
+
+      <!-- Help text -->
+      <div class="bg-duck-400/5 border border-duck-400/20 rounded-xl px-4 py-3 mb-6">
+        <p class="text-xs text-duck-600">
+          <strong>Tip:</strong> Empty cells use the calculated API time (shown as placeholder). Enter a time to override it. Click a row number to select it for "Copy selected row down".
+        </p>
+      </div>
+
+      <!-- Grid table -->
+      <div class="bg-white rounded-2xl shadow-sm border border-cream-200 overflow-hidden mb-20">
+        <div class="overflow-x-auto monthly-grid-wrap">
+          <table class="w-full monthly-grid" id="monthly-grid">
+            <thead>
+              <tr class="border-b border-cream-200 bg-cream-50/50">
+                <th rowspan="2" class="monthly-sticky-col text-left px-3 py-2.5 text-xs font-semibold text-muted uppercase tracking-wider bg-cream-50/50 border-r border-cream-200 w-16">Day</th>
+                <% prayers.forEach(function(prayer) { %>
+                  <th colspan="2" class="text-center px-2 py-2 text-xs font-semibold text-charcoal uppercase tracking-wider border-l border-cream-100">
+                    <%= prayer.charAt(0).toUpperCase() + prayer.slice(1) %>
+                  </th>
+                <% }) %>
+                <th rowspan="2" class="px-2 py-2 w-8"></th>
+              </tr>
+              <tr class="border-b border-cream-200 bg-cream-50/80">
+                <% prayers.forEach(function() { %>
+                  <th class="text-center px-1 py-1.5 text-[10px] font-medium text-muted uppercase tracking-wider border-l border-cream-100">Ath</th>
+                  <th class="text-center px-1 py-1.5 text-[10px] font-medium text-muted uppercase tracking-wider">Iqm</th>
+                <% }) %>
+              </tr>
+            </thead>
+            <tbody>
+              <%
+                var todayStr = new Date().toISOString().split('T')[0];
+                var dayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+              %>
+              <% for (var d = 1; d <= daysInMonth; d++) { %>
+                <%
+                  var dateStr = year + '-' + String(month).padStart(2, '0') + '-' + String(d).padStart(2, '0');
+                  var dayOfWeek = new Date(year, month - 1, d).getDay();
+                  var dayLabel = dayNames[dayOfWeek];
+                  var isToday = dateStr === todayStr;
+                  var isFriday = dayOfWeek === 5;
+                  var rowOverrides = overrideMap[dateStr] || {};
+                %>
+                <tr class="border-b border-cream-100 last:border-0 hover:bg-cream-50/30 transition-colors <%= isToday ? 'bg-gold-300/10' : '' %>"
+                    data-date="<%= dateStr %>" id="row-<%= dateStr %>">
+                  <td class="monthly-sticky-col px-3 py-1.5 border-r border-cream-200 bg-white <%= isToday ? 'bg-gold-300/10' : '' %> cursor-pointer select-none"
+                      onclick="selectRow('<%= dateStr %>')">
+                    <div class="flex items-center gap-1.5">
+                      <span class="text-sm font-semibold text-charcoal tabular-nums w-5 text-right"><%= d %></span>
+                      <span class="text-[10px] font-medium <%= isFriday ? 'text-sage-500' : 'text-muted' %>"><%= dayLabel %></span>
+                    </div>
+                  </td>
+                  <% prayers.forEach(function(prayer) { %>
+                    <%
+                      var isFridayDhuhr = isFriday && prayer === 'dhuhr';
+                      var dateOvr = rowOverrides[prayer];
+                      var permOvr = permanentMap[prayer];
+                      var apiDay = apiMonth[dateStr] || {};
+                      var apiTime = apiDay[prayer] || '';
+                      var athanVal = '', iqamahVal = '', cellType = 'api';
+                      if (dateOvr) {
+                        athanVal = dateOvr.athan_time || '';
+                        iqamahVal = dateOvr.iqamah_time || '';
+                        cellType = 'date';
+                      } else if (permOvr) {
+                        athanVal = permOvr.athan_time || '';
+                        iqamahVal = permOvr.iqamah_time || '';
+                        cellType = 'permanent';
+                      }
+                    %>
+                    <% if (isFridayDhuhr) { %>
+                      <td colspan="2" class="px-1 py-1 border-l border-cream-100 text-center bg-sage-300/10">
+                        <a href="/admin/jumuah" class="inline-flex items-center gap-1 text-xs text-sage-500 hover:text-sage-600 font-medium transition-colors" title="Edit Jumu'ah times">
+                          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+                          Jumu'ah
+                        </a>
+                      </td>
+                    <% } else { %>
+                    <td class="px-1 py-1 border-l border-cream-100">
+                      <input type="time"
+                        class="monthly-cell w-full text-center text-xs px-1 py-1.5 rounded border border-transparent focus:border-gold-400 focus:outline-none focus:ring-1 focus:ring-gold-400/30
+                          <%= cellType === 'date' ? 'bg-gold-300/15' : (cellType === 'permanent' ? 'bg-duck-300/15' : 'bg-transparent') %>"
+                        data-date="<%= dateStr %>" data-prayer="<%= prayer %>" data-field="athan_time"
+                        data-original="<%= athanVal %>"
+                        value="<%= athanVal %>"
+                        placeholder="<%= apiTime %>"
+                        onchange="trackChange(this)">
+                    </td>
+                    <td class="px-1 py-1">
+                      <input type="time"
+                        class="monthly-cell w-full text-center text-xs px-1 py-1.5 rounded border border-transparent focus:border-sage-400 focus:outline-none focus:ring-1 focus:ring-sage-400/30
+                          <%= cellType === 'date' ? 'bg-gold-300/15' : (cellType === 'permanent' ? 'bg-duck-300/15' : 'bg-transparent') %>"
+                        data-date="<%= dateStr %>" data-prayer="<%= prayer %>" data-field="iqamah_time"
+                        data-original="<%= iqamahVal %>"
+                        value="<%= iqamahVal %>"
+                        placeholder="<%= apiTime %>"
+                        onchange="trackChange(this)">
+                    </td>
+                    <% } %>
+                  <% }) %>
+                  <td class="px-1 py-1">
+                    <% if (d > 1) { %>
+                      <button type="button" onclick="copyFromPreviousDay('<%= dateStr %>')" title="Copy from previous day"
+                        class="p-1 rounded text-muted/40 hover:text-muted hover:bg-cream-100 transition-colors">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"/></svg>
+                      </button>
+                    <% } %>
+                  </td>
+                </tr>
+              <% } %>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Sticky save bar -->
+      <div id="save-bar" class="hidden fixed bottom-0 left-0 right-0 z-40 bg-white/90 backdrop-blur-md border-t border-cream-200 shadow-lg">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between">
+          <span class="text-sm text-muted">
+            <span class="font-semibold text-charcoal" id="save-bar-count">0</span> unsaved changes
+          </span>
+          <div class="flex items-center gap-3">
+            <button type="button" onclick="discardChanges()" class="px-4 py-2 text-sm text-muted hover:text-charcoal bg-cream-100 rounded-xl hover:bg-cream-200 transition-colors">
+              Discard
+            </button>
+            <button type="button" onclick="saveAllChanges()" id="save-btn"
+              class="px-6 py-2 text-sm font-medium text-white bg-gradient-to-r from-gold-400 to-gold-500 rounded-xl hover:from-gold-500 hover:to-gold-600 transition-all shadow-sm active:scale-[0.98]">
+              Save All Changes
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+// ── State ──
+var dirtyMap = new Map(); // key: "date|prayer|field" -> { date, prayer, field, value }
+var selectedRow = null;
+
+function navigateMonth() {
+  var m = document.getElementById('month-select').value;
+  var y = document.getElementById('year-select').value;
+  window.location.href = '/admin/monthly-timings?month=' + m + '&year=' + y;
+}
+
+// ── Change tracking ──
+function trackChange(input) {
+  var date = input.dataset.date;
+  var prayer = input.dataset.prayer;
+  var field = input.dataset.field;
+  var original = input.dataset.original || '';
+  var value = input.value || '';
+  var key = date + '|' + prayer + '|' + field;
+
+  if (value === original) {
+    dirtyMap.delete(key);
+    input.classList.remove('monthly-cell-dirty');
+  } else {
+    dirtyMap.set(key, { date: date, prayer: prayer, field: field, value: value });
+    input.classList.add('monthly-cell-dirty');
+  }
+  updateChangeCounter();
+}
+
+function updateChangeCounter() {
+  var count = dirtyMap.size;
+  var counter = document.getElementById('change-counter');
+  var saveBar = document.getElementById('save-bar');
+  var countEl = document.getElementById('change-count');
+  var saveBarCount = document.getElementById('save-bar-count');
+
+  if (count > 0) {
+    counter.classList.remove('hidden');
+    saveBar.classList.remove('hidden');
+  } else {
+    counter.classList.add('hidden');
+    saveBar.classList.add('hidden');
+  }
+  countEl.textContent = count;
+  saveBarCount.textContent = count;
+}
+
+// ── Save ──
+function saveAllChanges() {
+  if (dirtyMap.size === 0) return;
+
+  var btn = document.getElementById('save-btn');
+  btn.disabled = true;
+  btn.textContent = 'Saving...';
+
+  // Group changes by date+prayer so we send one entry per cell pair
+  var grouped = {};
+  dirtyMap.forEach(function(entry) {
+    var gpKey = entry.date + '|' + entry.prayer;
+    if (!grouped[gpKey]) {
+      grouped[gpKey] = { date: entry.date, prayer: entry.prayer };
+      // Get current values from inputs for both fields
+      var row = document.getElementById('row-' + entry.date);
+      var athanInput = row.querySelector('input[data-prayer="' + entry.prayer + '"][data-field="athan_time"]');
+      var iqamahInput = row.querySelector('input[data-prayer="' + entry.prayer + '"][data-field="iqamah_time"]');
+      grouped[gpKey].athan_time = athanInput ? athanInput.value : '';
+      grouped[gpKey].iqamah_time = iqamahInput ? iqamahInput.value : '';
+    }
+    // Override with the dirty value
+    grouped[gpKey][entry.field] = entry.value;
+  });
+
+  var changes = Object.values(grouped);
+
+  fetch('/admin/monthly-timings', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ changes: changes })
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(data) {
+    if (data.ok) {
+      // Update data-original for all saved inputs
+      dirtyMap.forEach(function(entry, key) {
+        var row = document.getElementById('row-' + entry.date);
+        var input = row.querySelector('input[data-prayer="' + entry.prayer + '"][data-field="' + entry.field + '"]');
+        if (input) {
+          input.dataset.original = input.value;
+          input.classList.remove('monthly-cell-dirty');
+          // Update background tint
+          input.classList.remove('bg-transparent', 'bg-duck-300/15');
+          if (input.value) {
+            input.classList.add('bg-gold-300/15');
+          } else {
+            input.classList.remove('bg-gold-300/15');
+            input.classList.add('bg-transparent');
+          }
+        }
+      });
+      dirtyMap.clear();
+      updateChangeCounter();
+      showToast('success', data.message);
+    } else {
+      showToast('error', data.message || 'Save failed');
+    }
+  })
+  .catch(function(err) {
+    showToast('error', 'Network error: ' + err.message);
+  })
+  .finally(function() {
+    btn.disabled = false;
+    btn.textContent = 'Save All Changes';
+  });
+}
+
+// ── Row selection ──
+function selectRow(dateStr) {
+  if (selectedRow) {
+    var prev = document.getElementById('row-' + selectedRow);
+    if (prev) prev.classList.remove('ring-2', 'ring-gold-400/40');
+  }
+  selectedRow = dateStr;
+  var row = document.getElementById('row-' + dateStr);
+  if (row) row.classList.add('ring-2', 'ring-gold-400/40');
+}
+
+// ── Copy from previous day ──
+function copyFromPreviousDay(dateStr) {
+  var row = document.getElementById('row-' + dateStr);
+  if (!row) return;
+  var prevRow = row.previousElementSibling;
+  if (!prevRow) return;
+
+  var inputs = row.querySelectorAll('input[type="time"]');
+  var prevInputs = prevRow.querySelectorAll('input[type="time"]');
+  inputs.forEach(function(input, i) {
+    if (prevInputs[i]) {
+      input.value = prevInputs[i].value;
+      trackChange(input);
+    }
+  });
+}
+
+// ── Apply to remaining ──
+function applyToRemaining() {
+  if (!selectedRow) {
+    showToast('error', 'Click a day number first to select a source row');
+    return;
+  }
+  var sourceRow = document.getElementById('row-' + selectedRow);
+  if (!sourceRow) return;
+  var sourceInputs = sourceRow.querySelectorAll('input[type="time"]');
+
+  // Find all rows after the selected one
+  var found = false;
+  var rows = document.querySelectorAll('#monthly-grid tbody tr');
+  rows.forEach(function(row) {
+    if (found) {
+      var inputs = row.querySelectorAll('input[type="time"]');
+      inputs.forEach(function(input, i) {
+        if (sourceInputs[i]) {
+          input.value = sourceInputs[i].value;
+          trackChange(input);
+        }
+      });
+    }
+    if (row.dataset.date === selectedRow) found = true;
+  });
+}
+
+// ── Clear all overrides ──
+function clearAllOverrides() {
+  if (!confirm('Clear all values in the grid? This will mark every cell as changed.')) return;
+  document.querySelectorAll('#monthly-grid input[type="time"]').forEach(function(input) {
+    input.value = '';
+    trackChange(input);
+  });
+}
+
+// ── Discard changes ──
+function discardChanges() {
+  dirtyMap.forEach(function(entry, key) {
+    var row = document.getElementById('row-' + entry.date);
+    var input = row.querySelector('input[data-prayer="' + entry.prayer + '"][data-field="' + entry.field + '"]');
+    if (input) {
+      input.value = input.dataset.original || '';
+      input.classList.remove('monthly-cell-dirty');
+    }
+  });
+  dirtyMap.clear();
+  updateChangeCounter();
+}
+
+// ── Toast ──
+function showToast(type, message) {
+  var existing = document.getElementById('toast');
+  if (existing) existing.remove();
+
+  var div = document.createElement('div');
+  div.id = 'toast';
+  div.className = 'fixed top-4 left-4 right-4 sm:left-auto sm:right-4 z-[100] animate-slide-in';
+  var bgClass = type === 'success' ? 'bg-sage-400 border-sage-500' : 'bg-red-500 border-red-600';
+  div.innerHTML = '<div class="flex items-center gap-3 px-5 py-3.5 rounded-xl shadow-lg border text-white ' + bgClass + '">' +
+    '<span class="text-sm font-medium">' + message + '</span>' +
+    '<button onclick="this.closest(\'#toast\').remove()" class="ml-2 opacity-70 hover:opacity-100">' +
+    '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>' +
+    '</button></div>';
+  document.body.appendChild(div);
+  setTimeout(function() { var t = document.getElementById('toast'); if (t) t.remove(); }, 4000);
+}
+
+// ── Beforeunload guard ──
+window.addEventListener('beforeunload', function(e) {
+  if (dirtyMap.size > 0) {
+    e.preventDefault();
+    e.returnValue = '';
+  }
+});
+</script>
+</body>
+</html>

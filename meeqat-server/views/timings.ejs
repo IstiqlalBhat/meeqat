@@ -25,6 +25,8 @@
                 class="px-4 py-2 rounded-xl border border-cream-200 bg-cream-50 text-charcoal focus:outline-none focus:ring-2 focus:ring-gold-400 text-sm"
                 onchange="this.form.submit()">
               <a href="/admin/timings" class="text-sm text-duck-500 hover:text-duck-400 transition-colors font-medium">Today</a>
+              <span class="text-cream-300">|</span>
+              <a href="/admin/monthly-timings" class="text-sm text-duck-500 hover:text-duck-400 transition-colors font-medium">Monthly Grid</a>
             </div>
             <span class="text-xs text-muted sm:ml-auto">
               Method: <%= ['Shia', 'MWL', 'ISNA', 'Egyptian', 'Umm Al-Qura', 'Karachi'][masjid.calculation_method] || 'Unknown' %>

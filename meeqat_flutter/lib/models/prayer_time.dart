@@ -70,6 +70,39 @@ enum Prayer {
     }
   }
 
+  // Dark-mode variants – tuned for WCAG AA (≥ 4.5:1) on #292524 surface
+  Color get _darkAccentDark {
+    switch (this) {
+      case Prayer.fajr:    return const Color(0xFF7DB4BE); // 6.6:1
+      case Prayer.sunrise: return const Color(0xFFC99A4A); // 5.9:1
+      case Prayer.dhuhr:   return const Color(0xFFC99A4A); // 5.9:1
+      case Prayer.asr:     return const Color(0xFFD4A574); // 6.8:1
+      case Prayer.sunset:  return const Color(0xFFC99A4A); // 5.9:1
+      case Prayer.maghrib: return const Color(0xFFC090D4); // 5.9:1
+      case Prayer.isha:    return const Color(0xFF7DB4BE); // 6.6:1
+    }
+  }
+
+  Color get _darkAccentLight {
+    switch (this) {
+      case Prayer.fajr:    return const Color(0xFFA8D4DC);
+      case Prayer.sunrise: return const Color(0xFFE0C08A);
+      case Prayer.dhuhr:   return const Color(0xFFE0C08A);
+      case Prayer.asr:     return const Color(0xFFE8CCA0);
+      case Prayer.sunset:  return const Color(0xFFE0C08A);
+      case Prayer.maghrib: return const Color(0xFFD4B0E0);
+      case Prayer.isha:    return const Color(0xFFA8D4DC);
+    }
+  }
+
+  /// Returns the accent color adjusted for the current theme brightness.
+  Color accentFor(Brightness brightness) =>
+      brightness == Brightness.dark ? _darkAccentDark : accentDark;
+
+  /// Returns the light accent color adjusted for the current theme brightness.
+  Color accentLightFor(Brightness brightness) =>
+      brightness == Brightness.dark ? _darkAccentLight : accentLight;
+
   bool get hasIqamah => this != Prayer.sunrise && this != Prayer.sunset;
 
   static List<Prayer> get mainPrayers =>

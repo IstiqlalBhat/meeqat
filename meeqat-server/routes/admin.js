@@ -267,6 +267,122 @@ router.post('/timings', requireMasjid, async (req, res) => {
   res.redirect(`/admin/timings?date=${date || new Date().toISOString().split('T')[0]}`);
 });
 
+// ─── Monthly Timings Grid ─────────────────────────────────────
+
+router.get('/monthly-timings', requireMasjid, async (req, res) => {
+  const masjid = req.masjid;
+  const now = new Date();
+  const month = parseInt(req.query.month) || (now.getMonth() + 1);
+  const year = parseInt(req.query.year) || now.getFullYear();
+  const daysInMonth = new Date(year, month, 0).getDate();
+  const prayers = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'];
+
+  const lat = masjid.latitude || 34.6834;
+  const lng = masjid.longitude || -82.8374;
+
+  // Fetch full month of API times in one call
+  let apiMonth = {}; // { "2026-03-01": { fajr: "05:30", ... }, ... }
+  try {
+    const url = `https://api.aladhan.com/v1/calendar/${year}/${month}?latitude=${lat}&longitude=${lng}&method=${masjid.calculation_method}`;
+    const response = await fetch(url);
+    const data = await response.json();
+    if (data.code === 200 && data.data) {
+      for (const dayData of data.data) {
+        const t = dayData.timings;
+        const dateStr = dayData.date.gregorian.date; // "DD-MM-YYYY"
+        const [dd, mm, yyyy] = dateStr.split('-');
+        const isoDate = `${yyyy}-${mm}-${dd}`;
+        apiMonth[isoDate] = {
+          fajr: (t.Fajr || '').replace(/ \(.*\)/, ''),
+          dhuhr: (t.Dhuhr || '').replace(/ \(.*\)/, ''),
+          asr: (t.Asr || '').replace(/ \(.*\)/, ''),
+          maghrib: (t.Maghrib || '').replace(/ \(.*\)/, ''),
+          isha: (t.Isha || '').replace(/ \(.*\)/, '')
+        };
+      }
+    }
+  } catch (err) {
+    console.error('Monthly API fetch error:', err.message);
+  }
+
+  // Fetch all date-specific overrides for this month range
+  const startDate = `${year}-${String(month).padStart(2, '0')}-01`;
+  const endDate = `${year}-${String(month).padStart(2, '0')}-${String(daysInMonth).padStart(2, '0')}`;
+
+  const { data: dateOverrides } = await supabase
+    .from('prayer_overrides')
+    .select('date, prayer, athan_time, iqamah_time')
+    .eq('masjid_id', masjid.id)
+    .gte('date', startDate)
+    .lte('date', endDate);
+
+  // Fetch permanent overrides (date IS NULL)
+  const { data: permanentOverrides } = await supabase
+    .from('prayer_overrides')
+    .select('prayer, athan_time, iqamah_time')
+    .eq('masjid_id', masjid.id)
+    .is('date', null);
+
+  // Build overrideMap[date][prayer] = { athan_time, iqamah_time }
+  const overrideMap = {};
+  for (const o of (dateOverrides || [])) {
+    if (!overrideMap[o.date]) overrideMap[o.date] = {};
+    overrideMap[o.date][o.prayer] = { athan_time: o.athan_time, iqamah_time: o.iqamah_time };
+  }
+
+  // Build permanentMap[prayer] = { athan_time, iqamah_time }
+  const permanentMap = {};
+  for (const o of (permanentOverrides || [])) {
+    permanentMap[o.prayer] = { athan_time: o.athan_time, iqamah_time: o.iqamah_time };
+  }
+
+  res.render('monthly-timings', { masjid, month, year, daysInMonth, prayers, apiMonth, overrideMap, permanentMap });
+});
+
+router.post('/monthly-timings', requireMasjid, express.json(), async (req, res) => {
+  const { changes } = req.body;
+  const masjidId = req.masjid.id;
+
+  if (!Array.isArray(changes) || changes.length === 0) {
+    return res.json({ ok: false, message: 'No changes provided' });
+  }
+
+  try {
+    let saved = 0;
+    for (const change of changes) {
+      const { date, prayer, athan_time, iqamah_time } = change;
+      if (!date || !prayer) continue;
+
+      // Delete existing override for this date+prayer
+      await supabase
+        .from('prayer_overrides')
+        .delete()
+        .eq('masjid_id', masjidId)
+        .eq('date', date)
+        .eq('prayer', prayer);
+
+      // If both are empty, just delete (revert to API)
+      const athan = athan_time || null;
+      const iqamah = iqamah_time || null;
+      if (athan || iqamah) {
+        await supabase.from('prayer_overrides').insert({
+          masjid_id: masjidId,
+          date,
+          prayer,
+          athan_time: athan,
+          iqamah_time: iqamah
+        });
+      }
+      saved++;
+    }
+
+    res.json({ ok: true, message: `Saved ${saved} changes` });
+  } catch (err) {
+    console.error('Monthly timings save error:', err);
+    res.status(500).json({ ok: false, message: 'Failed to save changes' });
+  }
+});
+
 // ─── API Settings (location & calculation method) ───────────
 
 router.get('/api-settings', requireMasjid, async (req, res) => {

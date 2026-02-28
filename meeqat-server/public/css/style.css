@@ -149,3 +149,49 @@ input[type="radio"] {
 html, body {
   overflow-x: hidden;
 }
+
+/* ── Monthly Grid ── */
+
+.monthly-grid {
+  border-collapse: collapse;
+}
+
+.monthly-grid input[type="time"] {
+  font-variant-numeric: tabular-nums;
+  font-size: 0.7rem;
+  min-width: 5.5rem;
+}
+
+/* Hide native time picker spinners for cleaner look */
+.monthly-grid input[type="time"]::-webkit-calendar-picker-indicator {
+  opacity: 0.3;
+  cursor: pointer;
+}
+
+.monthly-grid input[type="time"]:hover::-webkit-calendar-picker-indicator {
+  opacity: 0.7;
+}
+
+/* Sticky first column */
+.monthly-sticky-col {
+  position: sticky;
+  left: 0;
+  z-index: 2;
+}
+
+/* Shadow on sticky col when scrolled */
+.monthly-grid-wrap {
+  position: relative;
+}
+
+/* Dirty cell indicator */
+.monthly-cell-dirty {
+  box-shadow: inset 0 0 0 1.5px #D4A574 !important;
+  border-color: #D4A574 !important;
+}
+
+/* Placeholder styling for API times */
+.monthly-grid input[type="time"]::placeholder {
+  color: #B0A090;
+  font-style: italic;
+}
