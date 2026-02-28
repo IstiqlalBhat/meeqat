@@ -439,8 +439,19 @@ async function uploadImage(file, masjidId, category) {
     await firebaseFile.save(file.buffer, {
       metadata: { contentType: file.mimetype },
     });
-    await firebaseFile.makePublic();
-    return getFirebasePublicUrl(filename);
+
+    // Try makePublic first; fall back to signed URL if bucket uses uniform access
+    try {
+      await firebaseFile.makePublic();
+      return getFirebasePublicUrl(filename);
+    } catch (publicErr) {
+      // Uniform bucket-level access — use a long-lived signed URL instead
+      const [signedUrl] = await firebaseFile.getSignedUrl({
+        action: 'read',
+        expires: '03-01-2030',
+      });
+      return signedUrl;
+    }
   } catch (error) {
     console.error('Upload error:', error);
     return null;
