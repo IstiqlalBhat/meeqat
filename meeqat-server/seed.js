@@ -1,22 +1,8 @@
 require('dotenv').config();
 
-const bcrypt = require('bcrypt');
 const { supabase } = require('./db/supabase');
 
 async function seed() {
-  // Seed admin password
-  const { data: existingAdmin } = await supabase
-    .from('admin_settings')
-    .select('id')
-    .limit(1)
-    .maybeSingle();
-
-  if (!existingAdmin) {
-    const hash = bcrypt.hashSync('meeqat-admin', 10);
-    await supabase.from('admin_settings').insert({ password_hash: hash });
-    console.log('Seeded admin password.');
-  }
-
   // Check if masjid data exists
   const { data: existing } = await supabase
     .from('masjids')
@@ -25,6 +11,8 @@ async function seed() {
     .maybeSingle();
 
   if (!existing) {
+    const firebaseUid = process.env.SEED_FIREBASE_UID || null;
+
     const { data: masjid } = await supabase
       .from('masjids')
       .insert({
@@ -35,7 +23,8 @@ async function seed() {
         country: 'US',
         latitude: 34.6834,
         longitude: -82.8374,
-        calculation_method: 2
+        calculation_method: 2,
+        firebase_uid: firebaseUid
       })
       .select('id')
       .single();
@@ -74,6 +63,11 @@ async function seed() {
     });
 
     console.log('Seeded default masjid and data successfully.');
+    if (firebaseUid) {
+      console.log(`Assigned to Firebase UID: ${firebaseUid}`);
+    } else {
+      console.log('No SEED_FIREBASE_UID set - masjid is unassigned. Set it in .env to claim ownership.');
+    }
   } else {
     console.log('Database already has data, skipping seed.');
   }

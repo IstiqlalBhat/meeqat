@@ -5,3 +5,4 @@ db/meeqat.db-shm
 db/meeqat.db-wal
 .vercel
 firebase-service-account.json
+firebase-admin-sdk.json

@@ -4,7 +4,11 @@ class Masjid {
   final String? city;
   final String? state;
   final String? address;
+  final String? country;
+  final double? latitude;
+  final double? longitude;
   final String? imageUrl;
+  final double? distanceKm;
 
   Masjid({
     required this.id,
@@ -12,11 +16,21 @@ class Masjid {
     this.city,
     this.state,
     this.address,
+    this.country,
+    this.latitude,
+    this.longitude,
     this.imageUrl,
+    this.distanceKm,
   });
 
   String get locationString =>
       [city, state].where((s) => s != null && s.isNotEmpty).join(', ');
+
+  String get distanceString {
+    if (distanceKm == null) return '';
+    if (distanceKm! < 1) return '${(distanceKm! * 1000).round()} m away';
+    return '${distanceKm!.toStringAsFixed(1)} km away';
+  }
 
   factory Masjid.fromJson(Map<String, dynamic> json) => Masjid(
     id: json['id'] as int,
@@ -24,7 +38,11 @@ class Masjid {
     city: json['city'] as String?,
     state: json['state'] as String?,
     address: json['address'] as String?,
+    country: json['country'] as String?,
+    latitude: (json['latitude'] as num?)?.toDouble(),
+    longitude: (json['longitude'] as num?)?.toDouble(),
     imageUrl: json['image_url'] as String?,
+    distanceKm: (json['distance_km'] as num?)?.toDouble(),
   );
 }
 

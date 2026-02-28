@@ -11,9 +11,13 @@ CREATE TABLE IF NOT EXISTS masjids (
   longitude DOUBLE PRECISION,
   calculation_method INTEGER DEFAULT 2,
   image_url TEXT,
+  firebase_uid TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+CREATE UNIQUE INDEX IF NOT EXISTS masjids_firebase_uid_unique
+  ON masjids (firebase_uid) WHERE firebase_uid IS NOT NULL;
 
 CREATE TABLE IF NOT EXISTS prayer_overrides (
   id SERIAL PRIMARY KEY,
@@ -44,9 +48,4 @@ CREATE TABLE IF NOT EXISTS announcements (
   image_url TEXT,
   active INTEGER DEFAULT 1,
   created_at TIMESTAMPTZ DEFAULT NOW()
-);
-
-CREATE TABLE IF NOT EXISTS admin_settings (
-  id SERIAL PRIMARY KEY,
-  password_hash TEXT NOT NULL
 );

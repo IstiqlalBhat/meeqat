@@ -16,6 +16,17 @@ class BackendService {
     throw Exception('Failed to load masjids');
   }
 
+  Future<List<Masjid>> fetchNearbyMasjids(double lat, double lng, {double radius = 50}) async {
+    final res = await http.get(Uri.parse(
+      '$baseUrl/api/masjids/nearby?lat=$lat&lng=$lng&radius=$radius'
+    ));
+    if (res.statusCode == 200) {
+      final data = jsonDecode(res.body);
+      return (data['masjids'] as List).map((m) => Masjid.fromJson(m)).toList();
+    }
+    throw Exception('Failed to load nearby masjids');
+  }
+
   Future<List<PrayerTime>> fetchTimes(int masjidId, {String? date}) async {
     var url = '$baseUrl/api/masjids/$masjidId/times';
     if (date != null) url += '?date=$date';

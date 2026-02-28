@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/prayer_time.dart';
 import '../models/masjid.dart';
 import 'backend_service.dart';
+import 'notification_service.dart';
 
 class PrayerProvider extends ChangeNotifier {
   List<PrayerTime> prayerTimes = [];
@@ -16,7 +17,7 @@ class PrayerProvider extends ChangeNotifier {
   Timer? _timer;
 
   // Settings
-  String backendUrl = 'http://localhost:3000';
+  String backendUrl = 'https://clemsonmasjid.vercel.app';
   int selectedMasjidId = 0;
   String selectedMasjidName = '';
 
@@ -109,7 +110,7 @@ class PrayerProvider extends ChangeNotifier {
 
   Future<void> _loadSettings() async {
     final prefs = await SharedPreferences.getInstance();
-    backendUrl = prefs.getString('backendUrl') ?? 'http://localhost:3000';
+    backendUrl = prefs.getString('backendUrl') ?? 'https://clemsonmasjid.vercel.app';
     selectedMasjidId = prefs.getInt('selectedMasjidId') ?? 0;
     selectedMasjidName = prefs.getString('selectedMasjidName') ?? '';
     notifyListeners();
@@ -143,6 +144,8 @@ class PrayerProvider extends ChangeNotifier {
       prayerTimes = await service.fetchTimes(selectedMasjidId, date: today);
       jumuah = await service.fetchJumuah(selectedMasjidId);
       announcements = await service.fetchAnnouncements(selectedMasjidId);
+      // Schedule notifications for today's prayers
+      NotificationService.schedulePrayerNotifications(prayerTimes);
     } catch (e) {
       errorMessage = 'Unable to fetch prayer times';
     }

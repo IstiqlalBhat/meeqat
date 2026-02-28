@@ -12,9 +12,13 @@ CREATE TABLE IF NOT EXISTS masjids (
   longitude DOUBLE PRECISION,
   calculation_method INTEGER DEFAULT 2,
   image_url TEXT,
+  firebase_uid TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+CREATE UNIQUE INDEX IF NOT EXISTS masjids_firebase_uid_unique
+  ON masjids (firebase_uid) WHERE firebase_uid IS NOT NULL;
 
 CREATE TABLE IF NOT EXISTS prayer_overrides (
   id SERIAL PRIMARY KEY,
@@ -44,18 +48,3 @@ CREATE TABLE IF NOT EXISTS announcements (
   active INTEGER DEFAULT 1,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
-
-CREATE TABLE IF NOT EXISTS admin_settings (
-  id SERIAL PRIMARY KEY,
-  password_hash TEXT NOT NULL
-);
-
--- Enable Row Level Security (optional, since we use service key server-side)
--- ALTER TABLE masjids ENABLE ROW LEVEL SECURITY;
--- ALTER TABLE prayer_overrides ENABLE ROW LEVEL SECURITY;
--- ALTER TABLE jumuah_times ENABLE ROW LEVEL SECURITY;
--- ALTER TABLE announcements ENABLE ROW LEVEL SECURITY;
--- ALTER TABLE admin_settings ENABLE ROW LEVEL SECURITY;
-
--- Create storage bucket for images (run this separately or via Supabase dashboard)
--- INSERT INTO storage.buckets (id, name, public) VALUES ('meeqat-images', 'meeqat-images', true);

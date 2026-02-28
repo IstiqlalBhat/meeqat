@@ -36,13 +36,13 @@ enum Prayer {
 
   IconData get icon {
     switch (this) {
-      case Prayer.fajr: return Icons.dark_mode_outlined;
-      case Prayer.sunrise: return Icons.wb_twilight;
-      case Prayer.dhuhr: return Icons.wb_sunny;
-      case Prayer.asr: return Icons.sunny_snowing;
-      case Prayer.sunset: return Icons.wb_twilight;
-      case Prayer.maghrib: return Icons.nights_stay_outlined;
-      case Prayer.isha: return Icons.nightlight_round;
+      case Prayer.fajr: return Icons.dark_mode_rounded;
+      case Prayer.sunrise: return Icons.wb_twilight_rounded;
+      case Prayer.dhuhr: return Icons.light_mode_rounded;
+      case Prayer.asr: return Icons.wb_sunny_rounded;
+      case Prayer.sunset: return Icons.wb_twilight_rounded;
+      case Prayer.maghrib: return Icons.nights_stay_rounded;
+      case Prayer.isha: return Icons.bedtime_rounded;
     }
   }
 
@@ -112,7 +112,7 @@ class PrayerTime {
       final dt = DateTime(2000, 1, 1, int.parse(parts[0]), int.parse(parts[1]));
       return DateFormat('h:mm a').format(dt);
     } catch (_) {
-      return timeStr ?? '--:--';
+      return '--:--';
     }
   }
 

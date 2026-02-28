@@ -4,78 +4,95 @@ const multer = require('multer');
 const path = require('path');
 const { supabase } = require('../db/supabase');
 const { bucket } = require('../db/firebase');
-const { requireAuth } = require('../middleware/auth');
+const { requireAuth, loadMasjid, requireMasjid } = require('../middleware/auth');
 
 const router = express.Router();
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 20 * 1024 * 1024 } });
 
 router.use(requireAuth);
+router.use(loadMasjid);
 
 // ─── Dashboard ───────────────────────────────────────────────
 
 router.get('/', async (req, res) => {
+  // No masjid yet -> show setup wizard
+  if (!req.masjid) {
+    return res.render('setup-wizard', { error: null });
+  }
+
   try {
-    const { data: masjids } = await supabase
-      .from('masjids')
-      .select('*')
-      .order('name');
+    const m = req.masjid;
 
-    const stats = await Promise.all((masjids || []).map(async (m) => {
-      const { count: overrideCount } = await supabase
-        .from('prayer_overrides')
-        .select('*', { count: 'exact', head: true })
-        .eq('masjid_id', m.id);
+    const { count: overrideCount } = await supabase
+      .from('prayer_overrides')
+      .select('*', { count: 'exact', head: true })
+      .eq('masjid_id', m.id);
 
-      const { count: announcementCount } = await supabase
-        .from('announcements')
-        .select('*', { count: 'exact', head: true })
-        .eq('masjid_id', m.id)
-        .eq('active', 1);
+    const { count: announcementCount } = await supabase
+      .from('announcements')
+      .select('*', { count: 'exact', head: true })
+      .eq('masjid_id', m.id)
+      .eq('active', 1);
 
-      const { data: jumuah } = await supabase
-        .from('jumuah_times')
-        .select('id')
-        .eq('masjid_id', m.id)
-        .limit(1)
-        .maybeSingle();
+    const { data: jumuah } = await supabase
+      .from('jumuah_times')
+      .select('id')
+      .eq('masjid_id', m.id)
+      .limit(1)
+      .maybeSingle();
 
-      return { ...m, overrideCount: overrideCount || 0, announcementCount: announcementCount || 0, hasJumuah: !!jumuah };
-    }));
-
-    // Count total images across all storage folders
+    // Count images for this masjid
     let imageCount = 0;
-    for (const folder of ['masjids', 'announcements', 'gallery']) {
-      const [files] = await bucket.getFiles({ prefix: folder + '/' });
-      imageCount += files.filter(f => !f.name.endsWith('/')).length;
+    try {
+      const [files] = await bucket.getFiles({ prefix: `${m.id}/` });
+      imageCount = files.filter(f => !f.name.endsWith('/')).length;
+    } catch (err) {
+      console.error('Image count error:', err.message);
     }
 
-    res.render('dashboard', { masjids: stats, imageCount });
+    // Recent announcements for dashboard
+    const { data: recentAnnouncements } = await supabase
+      .from('announcements')
+      .select('*')
+      .eq('masjid_id', m.id)
+      .order('created_at', { ascending: false })
+      .limit(5);
+
+    res.render('dashboard', {
+      masjid: m,
+      stats: {
+        overrideCount: overrideCount || 0,
+        announcementCount: announcementCount || 0,
+        hasJumuah: !!jumuah,
+        imageCount
+      },
+      recentAnnouncements: recentAnnouncements || []
+    });
   } catch (err) {
     console.error('Dashboard error:', err);
-    res.render('dashboard', { masjids: [], imageCount: 0 });
+    res.render('dashboard', {
+      masjid: req.masjid,
+      stats: { overrideCount: 0, announcementCount: 0, hasJumuah: false, imageCount: 0 },
+      recentAnnouncements: []
+    });
   }
 });
 
-// ─── Masjid CRUD ─────────────────────────────────────────────
+// ─── Setup Wizard (first-time masjid creation) ──────────────
 
-router.get('/masjids/new', (req, res) => {
-  res.render('masjid-form', { masjid: null, error: null });
-});
+router.post('/setup', upload.single('image'), async (req, res) => {
+  if (req.masjid) {
+    return res.redirect('/admin');
+  }
 
-router.post('/masjids', upload.single('image'), async (req, res) => {
   const { name, address, city, state, country, latitude, longitude, calculation_method } = req.body;
 
   if (!name || !name.trim()) {
-    return res.render('masjid-form', { masjid: req.body, error: 'Name is required' });
+    return res.render('setup-wizard', { error: 'Masjid name is required' });
   }
 
   try {
-    let image_url = null;
-    if (req.file) {
-      image_url = await uploadImage(req.file, 'masjids');
-    }
-
-    await supabase.from('masjids').insert({
+    const insertData = {
       name: name.trim(),
       address: address || null,
       city: city || 'Clemson',
@@ -84,32 +101,44 @@ router.post('/masjids', upload.single('image'), async (req, res) => {
       latitude: latitude ? parseFloat(latitude) : null,
       longitude: longitude ? parseFloat(longitude) : null,
       calculation_method: calculation_method ? parseInt(calculation_method) : 2,
-      image_url
-    });
+      firebase_uid: req.session.firebase_uid
+    };
 
-    req.session.flash = { type: 'success', message: 'Masjid created successfully' };
+    const { data: newMasjid, error } = await supabase
+      .from('masjids')
+      .insert(insertData)
+      .select('id')
+      .single();
+
+    if (error) throw error;
+
+    // Upload profile image if provided
+    if (req.file && newMasjid) {
+      const imageUrl = await uploadImage(req.file, newMasjid.id, 'profile');
+      if (imageUrl) {
+        await supabase.from('masjids').update({ image_url: imageUrl }).eq('id', newMasjid.id);
+      }
+    }
+
+    req.session.flash = { type: 'success', message: 'Masjid created! Welcome to Meeqat.' };
     res.redirect('/admin');
   } catch (err) {
-    res.render('masjid-form', { masjid: req.body, error: err.message });
+    console.error('Setup error:', err);
+    res.render('setup-wizard', { error: err.message });
   }
 });
 
-router.get('/masjids/:id/edit', async (req, res) => {
-  const { data: masjid } = await supabase
-    .from('masjids')
-    .select('*')
-    .eq('id', req.params.id)
-    .single();
+// ─── Masjid Edit ─────────────────────────────────────────────
 
-  if (!masjid) return res.redirect('/admin');
-  res.render('masjid-form', { masjid, error: null });
+router.get('/edit', requireMasjid, (req, res) => {
+  res.render('masjid-form', { masjid: req.masjid, error: null });
 });
 
-router.post('/masjids/:id', upload.single('image'), async (req, res) => {
+router.post('/edit', requireMasjid, upload.single('image'), async (req, res) => {
   const { name, address, city, state, country, latitude, longitude, calculation_method } = req.body;
 
   if (!name || !name.trim()) {
-    return res.render('masjid-form', { masjid: { ...req.body, id: req.params.id }, error: 'Name is required' });
+    return res.render('masjid-form', { masjid: { ...req.body, id: req.masjid.id }, error: 'Name is required' });
   }
 
   try {
@@ -126,39 +155,25 @@ router.post('/masjids/:id', upload.single('image'), async (req, res) => {
     };
 
     if (req.file) {
-      updateData.image_url = await uploadImage(req.file, 'masjids');
+      updateData.image_url = await uploadImage(req.file, req.masjid.id, 'profile');
     }
 
-    await supabase.from('masjids').update(updateData).eq('id', req.params.id);
+    await supabase.from('masjids').update(updateData).eq('id', req.masjid.id);
 
     req.session.flash = { type: 'success', message: 'Masjid updated successfully' };
     res.redirect('/admin');
   } catch (err) {
-    res.render('masjid-form', { masjid: { ...req.body, id: req.params.id }, error: err.message });
+    res.render('masjid-form', { masjid: { ...req.body, id: req.masjid.id }, error: err.message });
   }
-});
-
-router.post('/masjids/:id/delete', async (req, res) => {
-  await supabase.from('masjids').delete().eq('id', req.params.id);
-  req.session.flash = { type: 'success', message: 'Masjid deleted' };
-  res.redirect('/admin');
 });
 
 // ─── Timings ─────────────────────────────────────────────────
 
-router.get('/masjids/:id/timings', async (req, res) => {
-  const { data: masjid } = await supabase
-    .from('masjids')
-    .select('*')
-    .eq('id', req.params.id)
-    .single();
-
-  if (!masjid) return res.redirect('/admin');
-
+router.get('/timings', requireMasjid, async (req, res) => {
+  const masjid = req.masjid;
   const date = req.query.date || new Date().toISOString().split('T')[0];
   const prayers = ['fajr', 'sunrise', 'dhuhr', 'asr', 'sunset', 'maghrib', 'isha'];
 
-  // Fetch API times
   const lat = masjid.latitude || 34.6834;
   const lng = masjid.longitude || -82.8374;
   let apiTimes = {};
@@ -179,14 +194,12 @@ router.get('/masjids/:id/timings', async (req, res) => {
     console.error('API fetch error:', err.message);
   }
 
-  // Get date-specific overrides
   const { data: dateOverrides } = await supabase
     .from('prayer_overrides')
     .select('prayer, athan_time, iqamah_time')
     .eq('masjid_id', masjid.id)
     .eq('date', date);
 
-  // Get permanent overrides
   const { data: permanentOverrides } = await supabase
     .from('prayer_overrides')
     .select('prayer, athan_time, iqamah_time')
@@ -200,12 +213,11 @@ router.get('/masjids/:id/timings', async (req, res) => {
   res.render('timings', { masjid, date, prayers, apiTimes, overrideMap });
 });
 
-// Save timings — FIXED: "Use API" now correctly removes all override types
-router.post('/masjids/:id/timings', async (req, res) => {
+router.post('/timings', requireMasjid, async (req, res) => {
   const { date, override_type } = req.body;
   const prayers = ['fajr', 'sunrise', 'dhuhr', 'asr', 'sunset', 'maghrib', 'isha'];
   const dateValue = override_type === 'permanent' ? null : (date || null);
-  const masjidId = parseInt(req.params.id);
+  const masjidId = req.masjid.id;
 
   try {
     for (const prayer of prayers) {
@@ -214,14 +226,12 @@ router.post('/masjids/:id/timings', async (req, res) => {
       const useApi = req.body[`useapi_${prayer}`];
 
       if (useApi) {
-        // FIX: Delete BOTH date-specific AND permanent overrides for this prayer
         await supabase
           .from('prayer_overrides')
           .delete()
           .eq('masjid_id', masjidId)
           .eq('prayer', prayer);
       } else if (athan || iqamah) {
-        // Delete existing override for this type, then insert new one
         if (dateValue === null) {
           await supabase
             .from('prayer_overrides')
@@ -254,34 +264,50 @@ router.post('/masjids/:id/timings', async (req, res) => {
     req.session.flash = { type: 'error', message: 'Failed to save prayer times' };
   }
 
-  res.redirect(`/admin/masjids/${req.params.id}/timings?date=${date || new Date().toISOString().split('T')[0]}`);
+  res.redirect(`/admin/timings?date=${date || new Date().toISOString().split('T')[0]}`);
+});
+
+// ─── API Settings (location & calculation method) ───────────
+
+router.get('/api-settings', requireMasjid, async (req, res) => {
+  res.render('api-settings', { masjid: req.masjid, error: null, success: null });
+});
+
+router.post('/api-settings', requireMasjid, async (req, res) => {
+  const { latitude, longitude, calculation_method } = req.body;
+
+  try {
+    await supabase.from('masjids').update({
+      latitude: latitude ? parseFloat(latitude) : null,
+      longitude: longitude ? parseFloat(longitude) : null,
+      calculation_method: calculation_method ? parseInt(calculation_method) : 2,
+      updated_at: new Date().toISOString()
+    }).eq('id', req.masjid.id);
+
+    req.session.flash = { type: 'success', message: 'API settings updated. Prayer times will now use the new location.' };
+    res.redirect('/admin/api-settings');
+  } catch (err) {
+    console.error('API settings error:', err);
+    res.render('api-settings', { masjid: { ...req.masjid, ...req.body }, error: err.message, success: null });
+  }
 });
 
 // ─── Jumu'ah ─────────────────────────────────────────────────
 
-router.get('/masjids/:id/jumuah', async (req, res) => {
-  const { data: masjid } = await supabase
-    .from('masjids')
-    .select('*')
-    .eq('id', req.params.id)
-    .single();
-
-  if (!masjid) return res.redirect('/admin');
-
+router.get('/jumuah', requireMasjid, async (req, res) => {
   const { data: jumuah } = await supabase
     .from('jumuah_times')
     .select('*')
-    .eq('masjid_id', masjid.id)
+    .eq('masjid_id', req.masjid.id)
     .maybeSingle();
 
-  res.render('jumuah', { masjid, jumuah });
+  res.render('jumuah', { masjid: req.masjid, jumuah });
 });
 
-router.post('/masjids/:id/jumuah', async (req, res) => {
+router.post('/jumuah', requireMasjid, async (req, res) => {
   const { khutbah_time, first_jamaat, second_jamaat } = req.body;
-  const masjidId = parseInt(req.params.id);
+  const masjidId = req.masjid.id;
 
-  // Delete existing, then insert (upsert workaround)
   await supabase.from('jumuah_times').delete().eq('masjid_id', masjidId);
   await supabase.from('jumuah_times').insert({
     masjid_id: masjidId,
@@ -291,40 +317,32 @@ router.post('/masjids/:id/jumuah', async (req, res) => {
   });
 
   req.session.flash = { type: 'success', message: "Jumu'ah times saved" };
-  res.redirect(`/admin/masjids/${req.params.id}/jumuah`);
+  res.redirect('/admin/jumuah');
 });
 
 // ─── Announcements ───────────────────────────────────────────
 
-router.get('/masjids/:id/announcements', async (req, res) => {
-  const { data: masjid } = await supabase
-    .from('masjids')
-    .select('*')
-    .eq('id', req.params.id)
-    .single();
-
-  if (!masjid) return res.redirect('/admin');
-
+router.get('/announcements', requireMasjid, async (req, res) => {
   const { data: announcements } = await supabase
     .from('announcements')
     .select('*')
-    .eq('masjid_id', masjid.id)
+    .eq('masjid_id', req.masjid.id)
     .order('created_at', { ascending: false });
 
-  res.render('announcements', { masjid, announcements: announcements || [] });
+  res.render('announcements', { masjid: req.masjid, announcements: announcements || [] });
 });
 
-router.post('/masjids/:id/announcements', upload.single('image'), async (req, res) => {
+router.post('/announcements', requireMasjid, upload.single('image'), async (req, res) => {
   const { title, body } = req.body;
 
   if (title && title.trim()) {
     let image_url = null;
     if (req.file) {
-      image_url = await uploadImage(req.file, 'announcements');
+      image_url = await uploadImage(req.file, req.masjid.id, 'announcements');
     }
 
     await supabase.from('announcements').insert({
-      masjid_id: parseInt(req.params.id),
+      masjid_id: req.masjid.id,
       title: title.trim(),
       body: body || null,
       image_url
@@ -333,14 +351,15 @@ router.post('/masjids/:id/announcements', upload.single('image'), async (req, re
     req.session.flash = { type: 'success', message: 'Announcement posted' };
   }
 
-  res.redirect(`/admin/masjids/${req.params.id}/announcements`);
+  res.redirect('/admin/announcements');
 });
 
-router.post('/announcements/:id/toggle', async (req, res) => {
+router.post('/announcements/:id/toggle', requireMasjid, async (req, res) => {
   const { data: ann } = await supabase
     .from('announcements')
     .select('*')
     .eq('id', req.params.id)
+    .eq('masjid_id', req.masjid.id)
     .single();
 
   if (ann) {
@@ -348,123 +367,34 @@ router.post('/announcements/:id/toggle', async (req, res) => {
       .from('announcements')
       .update({ active: ann.active ? 0 : 1 })
       .eq('id', ann.id);
-
-    res.redirect(`/admin/masjids/${ann.masjid_id}/announcements`);
-  } else {
-    res.redirect('/admin');
   }
+
+  res.redirect('/admin/announcements');
 });
 
-router.post('/announcements/:id/delete', async (req, res) => {
+router.post('/announcements/:id/delete', requireMasjid, async (req, res) => {
   const { data: ann } = await supabase
     .from('announcements')
-    .select('masjid_id')
+    .select('*')
     .eq('id', req.params.id)
+    .eq('masjid_id', req.masjid.id)
     .single();
 
   if (ann) {
-    await supabase.from('announcements').delete().eq('id', req.params.id);
-    req.session.flash = { type: 'success', message: 'Announcement deleted' };
-    res.redirect(`/admin/masjids/${ann.masjid_id}/announcements`);
-  } else {
-    res.redirect('/admin');
-  }
-});
-
-// ─── Media Library ──────────────────────────────────────────
-
-router.get('/images', async (req, res) => {
-  const filter = req.query.filter || 'all';
-  const folders = filter === 'all'
-    ? ['masjids', 'announcements', 'gallery']
-    : [filter];
-
-  try {
-    // Collect all image URLs currently referenced in the database
-    const { data: masjidRows } = await supabase.from('masjids').select('image_url');
-    const { data: annRows } = await supabase.from('announcements').select('image_url');
-    const usedUrls = new Set([
-      ...(masjidRows || []).map(r => r.image_url).filter(Boolean),
-      ...(annRows || []).map(r => r.image_url).filter(Boolean),
-    ]);
-
-    let images = [];
-
-    for (const folder of folders) {
+    // Delete announcement image from storage if it exists
+    if (ann.image_url) {
       try {
-        const [files] = await bucket.getFiles({ prefix: folder + '/' });
-
-        for (const file of files) {
-          if (file.name.endsWith('/')) continue; // skip folder placeholders
-          const fileName = file.name.split('/').pop();
-          const publicUrl = getFirebasePublicUrl(file.name);
-          const metadata = file.metadata;
-          images.push({
-            name: fileName,
-            path: file.name,
-            folder,
-            url: publicUrl,
-            createdAt: metadata.timeCreated || null,
-            size: metadata.size ? parseInt(metadata.size) : null,
-            inUse: usedUrls.has(publicUrl),
-          });
-        }
+        const filePath = extractFilePath(ann.image_url);
+        if (filePath) await bucket.file(filePath).delete();
       } catch (err) {
-        console.error(`Error listing ${folder}:`, err.message);
-        continue;
+        console.error('Image delete error:', err.message);
       }
     }
-
-    // Sort newest first
-    images.sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
-
-    res.render('images', { images, filter });
-  } catch (err) {
-    console.error('Images list error:', err);
-    res.render('images', { images: [], filter });
-  }
-});
-
-router.post('/images/upload', upload.array('images', 10), async (req, res) => {
-  const folder = req.body.folder || 'gallery';
-  let uploaded = 0;
-
-  if (req.files && req.files.length > 0) {
-    for (const file of req.files) {
-      const url = await uploadImage(file, folder);
-      if (url) uploaded++;
-    }
+    await supabase.from('announcements').delete().eq('id', ann.id);
+    req.session.flash = { type: 'success', message: 'Announcement deleted' };
   }
 
-  req.session.flash = {
-    type: uploaded > 0 ? 'success' : 'error',
-    message: uploaded > 0
-      ? `${uploaded} image${uploaded > 1 ? 's' : ''} uploaded`
-      : 'Failed to upload images',
-  };
-  res.redirect(`/admin/images?filter=${folder}`);
-});
-
-router.post('/images/:path(*)/delete', async (req, res) => {
-  const filePath = req.params.path;
-  const folder = filePath.split('/')[0] || 'all';
-
-  try {
-    await bucket.file(filePath).delete();
-
-    // Clear the reference from database rows that used this image
-    const publicUrl = getFirebasePublicUrl(filePath);
-
-    await supabase.from('masjids').update({ image_url: null }).eq('image_url', publicUrl);
-    await supabase.from('announcements').update({ image_url: null }).eq('image_url', publicUrl);
-
-    req.session.flash = { type: 'success', message: 'Image deleted' };
-  } catch (err) {
-    console.error('Image delete error:', err);
-    req.session.flash = { type: 'error', message: 'Failed to delete image' };
-  }
-
-  res.redirect(`/admin/images?filter=${folder}`);
+  res.redirect('/admin/announcements');
 });
 
 // ─── Firebase Storage Helpers ────────────────────────────────
@@ -473,9 +403,36 @@ function getFirebasePublicUrl(filePath) {
   return `https://storage.googleapis.com/${bucket.name}/${filePath}`;
 }
 
-async function uploadImage(file, folder) {
+function extractFilePath(publicUrl) {
+  const prefix = `https://storage.googleapis.com/${bucket.name}/`;
+  if (publicUrl && publicUrl.startsWith(prefix)) {
+    return publicUrl.slice(prefix.length);
+  }
+  return null;
+}
+
+async function uploadImage(file, masjidId, category) {
   const ext = path.extname(file.originalname) || '.jpg';
-  const filename = `${folder}/${Date.now()}-${Math.random().toString(36).slice(2)}${ext}`;
+
+  let filename;
+  if (category === 'profile') {
+    // Profile image: overwrite previous (one per masjid)
+    filename = `${masjidId}/profile${ext}`;
+    // Try to delete old profile image with different extension
+    try {
+      const [files] = await bucket.getFiles({ prefix: `${masjidId}/profile` });
+      for (const f of files) {
+        if (f.name.startsWith(`${masjidId}/profile`)) {
+          await f.delete().catch(() => {});
+        }
+      }
+    } catch (err) {
+      // Ignore cleanup errors
+    }
+  } else {
+    // Announcement images: timestamped
+    filename = `${masjidId}/announcements/${Date.now()}${ext}`;
+  }
 
   try {
     const firebaseFile = bucket.file(filename);

@@ -46,22 +46,68 @@ async function fetchAladhanTimes(lat, lng, method, date) {
   return null;
 }
 
+// Haversine distance in km between two lat/lng points
+function haversineKm(lat1, lng1, lat2, lng2) {
+  const R = 6371;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLng = (lng2 - lng1) * Math.PI / 180;
+  const a = Math.sin(dLat / 2) ** 2
+    + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180)
+    * Math.sin(dLng / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
 // GET /api/masjids
 router.get('/masjids', async (req, res) => {
   const { data: masjids, error } = await supabase
     .from('masjids')
-    .select('id, name, city, state, image_url')
+    .select('id, name, address, city, state, country, latitude, longitude, image_url')
     .order('name');
 
   if (error) return res.status(500).json({ error: error.message });
   res.json({ masjids: masjids || [] });
 });
 
+// GET /api/masjids/nearby?lat=X&lng=Y&radius=50
+// Returns masjids sorted by distance from the given coordinates
+router.get('/masjids/nearby', async (req, res) => {
+  const { lat, lng, radius } = req.query;
+
+  if (!lat || !lng) {
+    return res.status(400).json({ error: 'lat and lng query parameters are required' });
+  }
+
+  const userLat = parseFloat(lat);
+  const userLng = parseFloat(lng);
+  const maxRadius = parseFloat(radius) || 50; // default 50 km
+
+  if (isNaN(userLat) || isNaN(userLng)) {
+    return res.status(400).json({ error: 'lat and lng must be valid numbers' });
+  }
+
+  const { data: masjids, error } = await supabase
+    .from('masjids')
+    .select('id, name, address, city, state, country, latitude, longitude, image_url');
+
+  if (error) return res.status(500).json({ error: error.message });
+
+  const results = (masjids || [])
+    .filter(m => m.latitude != null && m.longitude != null)
+    .map(m => ({
+      ...m,
+      distance_km: Math.round(haversineKm(userLat, userLng, m.latitude, m.longitude) * 10) / 10
+    }))
+    .filter(m => m.distance_km <= maxRadius)
+    .sort((a, b) => a.distance_km - b.distance_km);
+
+  res.json({ masjids: results });
+});
+
 // GET /api/masjids/:id
 router.get('/masjids/:id', async (req, res) => {
   const { data: masjid, error } = await supabase
     .from('masjids')
-    .select('*')
+    .select('id, name, address, city, state, country, latitude, longitude, image_url')
     .eq('id', req.params.id)
     .single();
 

@@ -21,7 +21,7 @@
           <svg class="w-4 h-4 text-sage-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
           New Announcement
         </h3>
-        <form method="POST" action="/admin/masjids/<%= masjid.id %>/announcements" enctype="multipart/form-data">
+        <form method="POST" action="/admin/announcements" enctype="multipart/form-data">
           <div class="space-y-4">
             <div>
               <input type="text" name="title" required placeholder="Announcement title"

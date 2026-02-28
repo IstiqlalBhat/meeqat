@@ -4,15 +4,17 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'theme/app_theme.dart';
 import 'services/prayer_provider.dart';
+import 'services/notification_service.dart';
 import 'screens/prayer_screen.dart';
 import 'screens/qibla_screen.dart';
 import 'screens/announcements_screen.dart';
 import 'screens/masjid_screen.dart';
 import 'screens/settings_screen.dart';
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
+  await NotificationService.init();
   runApp(const MeeqatApp());
 }
 

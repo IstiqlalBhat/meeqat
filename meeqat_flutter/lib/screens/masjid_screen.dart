@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:provider/provider.dart';
 import '../models/masjid.dart';
 import '../services/prayer_provider.dart';
@@ -16,15 +17,64 @@ class _MasjidScreenState extends State<MasjidScreen> {
   List<Masjid> _masjids = [];
   bool _isLoading = true;
   String? _error;
+  bool _usingGps = false;
+  Position? _userPosition;
 
   @override
   void initState() {
     super.initState();
-    _loadMasjids();
+    _loadWithGps();
   }
 
-  Future<void> _loadMasjids() async {
+  Future<void> _loadWithGps() async {
     setState(() { _isLoading = true; _error = null; });
+
+    try {
+      // Check location permission
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+      }
+
+      if (permission == LocationPermission.deniedForever ||
+          permission == LocationPermission.denied) {
+        // No GPS permission — fall back to showing all masjids
+        await _loadAllMasjids();
+        return;
+      }
+
+      // Get current position
+      final position = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(accuracy: LocationAccuracy.medium),
+      ).timeout(const Duration(seconds: 10));
+
+      _userPosition = position;
+      _usingGps = true;
+
+      if (!mounted) return;
+      final provider = context.read<PrayerProvider>();
+      final service = BackendService(baseUrl: provider.backendUrl);
+      final list = await service.fetchNearbyMasjids(
+        position.latitude,
+        position.longitude,
+        radius: 100,
+      );
+
+      if (list.isEmpty) {
+        // No nearby masjids — show all as fallback
+        await _loadAllMasjids();
+        return;
+      }
+
+      setState(() { _masjids = list; _isLoading = false; });
+    } catch (e) {
+      // GPS failed — fall back to all masjids
+      await _loadAllMasjids();
+    }
+  }
+
+  Future<void> _loadAllMasjids() async {
+    setState(() { _isLoading = true; _error = null; _usingGps = false; });
     try {
       final provider = context.read<PrayerProvider>();
       final service = BackendService(baseUrl: provider.backendUrl);
@@ -39,22 +89,82 @@ class _MasjidScreenState extends State<MasjidScreen> {
   Widget build(BuildContext context) {
     return RefreshIndicator(
       color: AppTheme.gold,
-      onRefresh: _loadMasjids,
+      onRefresh: _loadWithGps,
       child: ListView(
         padding: const EdgeInsets.only(top: 16, bottom: 120),
         children: [
           // Header
-          const Padding(
-            padding: EdgeInsets.fromLTRB(24, 8, 24, 20),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(24, 8, 24, 4),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Select Masjid', style: TextStyle(fontSize: 28, fontWeight: FontWeight.w700, color: AppTheme.charcoal)),
-                SizedBox(height: 4),
-                Text('Choose your local masjid for accurate iqamah times', style: TextStyle(fontSize: 14, color: AppTheme.muted)),
+                const Text('Select Masjid', style: TextStyle(fontSize: 28, fontWeight: FontWeight.w700, color: AppTheme.charcoal)),
+                const SizedBox(height: 4),
+                Text(
+                  _usingGps
+                    ? 'Showing masjids near your location'
+                    : 'Choose your local masjid for accurate iqamah times',
+                  style: const TextStyle(fontSize: 14, color: AppTheme.muted),
+                ),
               ],
             ),
           ),
+
+          // GPS indicator
+          if (_usingGps && _userPosition != null)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(14),
+                  color: AppTheme.duck.withValues(alpha: 0.08),
+                  border: Border.all(color: AppTheme.duck.withValues(alpha: 0.15)),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.my_location_rounded, size: 16, color: AppTheme.duck.withValues(alpha: 0.7)),
+                    const SizedBox(width: 8),
+                    const Expanded(
+                      child: Text('Sorted by distance from you', style: TextStyle(fontSize: 12, color: AppTheme.muted)),
+                    ),
+                    GestureDetector(
+                      onTap: _loadAllMasjids,
+                      child: const Text('Show all', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.duck)),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+          if (!_usingGps && !_isLoading && _error == null)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
+              child: GestureDetector(
+                onTap: _loadWithGps,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(14),
+                    color: AppTheme.goldLight.withValues(alpha: 0.15),
+                    border: Border.all(color: AppTheme.gold.withValues(alpha: 0.15)),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.location_searching_rounded, size: 16, color: AppTheme.gold.withValues(alpha: 0.7)),
+                      const SizedBox(width: 8),
+                      const Expanded(
+                        child: Text('Tap to find masjids near you', style: TextStyle(fontSize: 12, color: AppTheme.muted)),
+                      ),
+                      const Icon(Icons.arrow_forward_ios, size: 12, color: AppTheme.gold),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+
+          const SizedBox(height: 8),
 
           // Current selection
           Consumer<PrayerProvider>(
@@ -117,7 +227,7 @@ class _MasjidScreenState extends State<MasjidScreen> {
                   Text(_error!, style: const TextStyle(fontSize: 15, color: AppTheme.muted)),
                   const SizedBox(height: 16),
                   TextButton.icon(
-                    onPressed: _loadMasjids,
+                    onPressed: _loadWithGps,
                     icon: const Icon(Icons.refresh, size: 18),
                     label: const Text('Retry'),
                     style: TextButton.styleFrom(foregroundColor: AppTheme.gold),
@@ -190,13 +300,21 @@ class _MasjidScreenState extends State<MasjidScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(masjid.name, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: AppTheme.charcoal)),
-                    if (masjid.locationString.isNotEmpty) ...[
+                    if (masjid.locationString.isNotEmpty || masjid.distanceString.isNotEmpty) ...[
                       const SizedBox(height: 3),
                       Row(
                         children: [
                           Icon(Icons.location_on_outlined, size: 12, color: AppTheme.muted.withValues(alpha: 0.5)),
                           const SizedBox(width: 3),
-                          Text(masjid.locationString, style: TextStyle(fontSize: 12, color: AppTheme.muted.withValues(alpha: 0.7))),
+                          Expanded(
+                            child: Text(
+                              masjid.distanceString.isNotEmpty
+                                ? '${masjid.distanceString} · ${masjid.locationString}'
+                                : masjid.locationString,
+                              style: TextStyle(fontSize: 12, color: AppTheme.muted.withValues(alpha: 0.7)),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
                         ],
                       ),
                     ],
