@@ -16,6 +16,7 @@ class _QiblaScreenState extends State<QiblaScreen> {
   double? _qiblaDirection;
   String? _error;
   bool _locationLoaded = false;
+  bool _compassAvailable = true;
 
   // Kaaba coordinates
   static const _kaabaLat = 21.4225;
@@ -53,9 +54,26 @@ class _QiblaScreenState extends State<QiblaScreen> {
   }
 
   void _initCompass() {
-    FlutterCompass.events?.listen((event) {
+    final stream = FlutterCompass.events;
+    if (stream == null) {
+      setState(() {
+        _compassAvailable = false;
+        _heading = 0;
+      });
+      return;
+    }
+    stream.listen((event) {
       if (mounted && event.heading != null) {
         setState(() => _heading = event.heading);
+      }
+    });
+    // If no compass event arrives within 3 seconds, fall back to heading 0
+    Future.delayed(const Duration(seconds: 3), () {
+      if (mounted && _heading == null) {
+        setState(() {
+          _compassAvailable = false;
+          _heading = 0;
+        });
       }
     });
   }
@@ -249,7 +267,9 @@ class _QiblaScreenState extends State<QiblaScreen> {
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
-                    'Hold your device flat and rotate until the needle points up',
+                    _compassAvailable
+                        ? 'Hold your device flat and rotate until the needle points up'
+                        : 'Compass not available on this device. Qibla is ${_qiblaDirection?.round()}° from North.',
                     style: TextStyle(fontSize: 12, color: AppTheme.muted.withValues(alpha: 0.7)),
                   ),
                 ),

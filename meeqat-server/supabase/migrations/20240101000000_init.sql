@@ -26,9 +26,11 @@ CREATE TABLE IF NOT EXISTS prayer_overrides (
   date TEXT,
   prayer TEXT NOT NULL,
   athan_time TEXT,
-  iqamah_time TEXT,
-  UNIQUE(masjid_id, COALESCE(date, ''), prayer)
+  iqamah_time TEXT
 );
+
+CREATE UNIQUE INDEX IF NOT EXISTS prayer_overrides_unique
+  ON prayer_overrides (masjid_id, COALESCE(date, ''), prayer);
 
 CREATE TABLE IF NOT EXISTS jumuah_times (
   id SERIAL PRIMARY KEY,
