@@ -1,0 +1,63 @@
+<%- include('partials/head') %>
+<%- include('partials/header') %>
+
+<main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+  <div class="flex gap-8">
+    <%- include('partials/sidebar') %>
+
+    <div class="flex-1 max-w-xl">
+      <div class="mb-6">
+        <a href="/admin" class="inline-flex items-center gap-1 text-muted text-sm hover:text-charcoal transition-colors">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+          Dashboard
+        </a>
+        <h1 class="text-2xl font-semibold text-charcoal mt-2">Jumu'ah Times</h1>
+        <p class="text-muted text-sm mt-1"><%= masjid.name %></p>
+      </div>
+
+      <!-- Info box -->
+      <div class="bg-sage-400/5 border border-sage-400/20 rounded-xl px-4 py-3 mb-6">
+        <p class="text-xs text-sage-600">
+          These times are displayed to users on Fridays and are available via the API at <code class="bg-sage-400/10 px-1 rounded">/api/masjids/<%= masjid.id %>/jumuah</code>
+        </p>
+      </div>
+
+      <div class="bg-white rounded-2xl shadow-sm border border-cream-200 p-6">
+        <form method="POST" action="/admin/masjids/<%= masjid.id %>/jumuah">
+          <div class="space-y-5">
+            <div>
+              <label class="block text-sm font-medium text-charcoal mb-1.5">Khutbah Time</label>
+              <input type="time" name="khutbah_time" value="<%= jumuah ? jumuah.khutbah_time || '' : '' %>"
+                class="w-full px-4 py-3 rounded-xl border border-cream-200 bg-cream-50 text-charcoal focus:outline-none focus:ring-2 focus:ring-gold-400 text-sm">
+              <p class="text-xs text-muted mt-1.5">When the khutbah (sermon) begins</p>
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-charcoal mb-1.5">First Jamaat</label>
+              <input type="time" name="first_jamaat" value="<%= jumuah ? jumuah.first_jamaat || '' : '' %>"
+                class="w-full px-4 py-3 rounded-xl border border-cream-200 bg-cream-50 text-charcoal focus:outline-none focus:ring-2 focus:ring-gold-400 text-sm">
+              <p class="text-xs text-muted mt-1.5">Primary congregational prayer time</p>
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-charcoal mb-1.5">Second Jamaat <span class="text-muted font-normal">(optional)</span></label>
+              <input type="time" name="second_jamaat" value="<%= jumuah ? jumuah.second_jamaat || '' : '' %>"
+                class="w-full px-4 py-3 rounded-xl border border-cream-200 bg-cream-50 text-charcoal focus:outline-none focus:ring-2 focus:ring-gold-400 text-sm">
+              <p class="text-xs text-muted mt-1.5">Leave empty if only one jamaat</p>
+            </div>
+          </div>
+
+          <div class="flex gap-3 mt-8">
+            <button type="submit"
+              class="flex-1 bg-gradient-to-r from-gold-400 to-gold-500 text-white font-medium py-3 rounded-xl hover:from-gold-500 hover:to-gold-600 transition-all shadow-sm text-sm active:scale-[0.98]">
+              Save Jumu'ah Times
+            </button>
+            <a href="/admin" class="px-6 py-3 bg-cream-100 text-muted rounded-xl text-sm font-medium hover:bg-cream-200 transition-colors text-center">Cancel</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</main>
+</body>
+</html>

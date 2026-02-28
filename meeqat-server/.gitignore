@@ -1,0 +1,7 @@
+node_modules/
+.env
+db/meeqat.db
+db/meeqat.db-shm
+db/meeqat.db-wal
+.vercel
+firebase-service-account.json

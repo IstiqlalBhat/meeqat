@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Meeqat Admin</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            cream: { 50: '#FAF6F0', 100: '#F5EDE3', 200: '#EDE0D0', 300: '#E0CDB8' },
+            gold: { 300: '#E8C9A0', 400: '#D4A574', 500: '#C9956B', 600: '#B8804F' },
+            sage: { 300: '#A7C4A0', 400: '#8FAE8B', 500: '#6B8F71', 600: '#547356' },
+            duck: { 300: '#B5CDD3', 400: '#8EADB5', 500: '#6D9BA3', 600: '#578289' },
+            charcoal: '#2C2C2E',
+            muted: '#6B5E50'
+          },
+          fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] }
+        }
+      }
+    }
+  </script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body class="bg-cream-50 text-charcoal font-sans min-h-screen">
+
+<!-- Toast notification -->
+<% if (typeof flash !== 'undefined' && flash.message) { %>
+  <div id="toast" class="fixed top-4 right-4 z-[100] animate-slide-in">
+    <div class="flex items-center gap-3 px-5 py-3.5 rounded-xl shadow-lg border
+      <%= flash.type === 'success' ? 'bg-sage-400 border-sage-500 text-white' : 'bg-red-500 border-red-600 text-white' %>">
+      <% if (flash.type === 'success') { %>
+        <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+      <% } else { %>
+        <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+      <% } %>
+      <span class="text-sm font-medium"><%= flash.message %></span>
+      <button onclick="this.closest('#toast').remove()" class="ml-2 opacity-70 hover:opacity-100">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+    </div>
+  </div>
+  <script>setTimeout(() => { const t = document.getElementById('toast'); if (t) t.remove(); }, 4000);</script>
+<% } %>

@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Meeqat Admin - Login</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            cream: { 50: '#FAF6F0', 100: '#F5EDE3', 200: '#EDE0D0' },
+            gold: { 300: '#E8C9A0', 400: '#D4A574', 500: '#C9956B' },
+            sage: { 300: '#A7C4A0', 400: '#8FAE8B', 500: '#6B8F71' },
+            duck: { 300: '#B5CDD3', 400: '#8EADB5', 500: '#6D9BA3' },
+            charcoal: '#2C2C2E',
+            muted: '#6B5E50'
+          },
+          fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] }
+        }
+      }
+    }
+  </script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body class="bg-cream-50 text-charcoal font-sans min-h-screen">
+  <div class="min-h-screen flex items-center justify-center px-4">
+    <div class="w-full max-w-sm">
+      <div class="text-center mb-8">
+        <div class="w-20 h-20 bg-gradient-to-br from-gold-400 to-gold-500 rounded-2xl flex items-center justify-center shadow-lg mx-auto mb-5 login-logo">
+          <svg class="w-10 h-10 text-white" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M12 3L2 12h3v8h14v-8h3L12 3zm0 2.84L18 11v7H6v-7l6-5.16z"/>
+          </svg>
+        </div>
+        <h1 class="text-2xl font-semibold text-charcoal">Meeqat Admin</h1>
+        <p class="text-muted text-sm mt-1">Prayer times management dashboard</p>
+      </div>
+
+      <div class="bg-white rounded-2xl shadow-sm border border-cream-200 p-6">
+        <% if (error) { %>
+          <div class="flex items-center gap-2 bg-red-50 text-red-600 text-sm rounded-xl px-4 py-3 mb-4 border border-red-100">
+            <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            <%= error %>
+          </div>
+        <% } %>
+
+        <form method="POST" action="/admin/login">
+          <label class="block text-sm font-medium text-muted mb-2">Admin Password</label>
+          <input type="password" name="password" required autofocus
+            class="w-full px-4 py-3 rounded-xl border border-cream-200 bg-cream-50 text-charcoal focus:outline-none focus:ring-2 focus:ring-gold-400 focus:border-transparent transition-all text-sm"
+            placeholder="Enter password">
+
+          <button type="submit"
+            class="w-full mt-4 bg-gradient-to-r from-gold-400 to-gold-500 text-white font-medium py-3 rounded-xl hover:from-gold-500 hover:to-gold-600 transition-all shadow-sm text-sm active:scale-[0.98]">
+            Sign In
+          </button>
+        </form>
+      </div>
+
+      <p class="text-center text-xs text-muted mt-4">Default password: <code class="bg-cream-100 px-1.5 py-0.5 rounded text-xs">meeqat-admin</code></p>
+    </div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,123 @@
+/* Meeqat Admin - Custom Styles */
+
+* {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Smooth transitions */
+a, button, input, select, textarea {
+  transition: all 0.2s ease;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #EDE0D0;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #D4A574;
+}
+
+/* Input focus glow */
+input:focus, select:focus, textarea:focus {
+  box-shadow: 0 0 0 3px rgba(212, 165, 116, 0.15);
+}
+
+/* Card hover lift */
+.hover\:shadow-md:hover {
+  transform: translateY(-1px);
+}
+
+/* Toast animation */
+@keyframes slide-in {
+  from {
+    opacity: 0;
+    transform: translateX(100%) translateY(0);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) translateY(0);
+  }
+}
+
+.animate-slide-in {
+  animation: slide-in 0.3s ease-out;
+}
+
+/* Login logo animation */
+.login-logo {
+  animation: float 3s ease-in-out infinite;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-6px); }
+}
+
+/* Sidebar active state */
+.sidebar-link[href] {
+  position: relative;
+}
+
+/* Line clamp */
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Pulse animation for status dot */
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Active scale for buttons */
+.active\:scale-\[0\.98\]:active {
+  transform: scale(0.98);
+}
+
+/* Responsive table */
+@media (max-width: 639px) {
+  .overflow-x-auto {
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* Drop zone hover */
+#drop-zone.drag-over {
+  border-color: #D4A574;
+  background-color: rgba(212, 165, 116, 0.05);
+}
+
+/* Checkbox styling */
+input[type="checkbox"] {
+  accent-color: #8EADB5;
+}
+
+input[type="radio"] {
+  accent-color: #D4A574;
+}
+
+/* Gradient text (unused but available) */
+.text-gradient {
+  background: linear-gradient(135deg, #D4A574, #8FAE8B);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
