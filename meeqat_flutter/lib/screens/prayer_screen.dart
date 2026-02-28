@@ -1,4 +1,3 @@
-import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:hijri/hijri_calendar.dart';
@@ -6,7 +5,11 @@ import '../models/prayer_time.dart';
 import '../services/prayer_provider.dart';
 import '../theme/app_theme.dart';
 import '../widgets/announcement_card.dart';
+import '../widgets/empty_state.dart';
 import '../widgets/jumuah_banner.dart';
+import '../widgets/ornament_divider.dart';
+import '../widgets/shimmer_loading.dart';
+
 
 class PrayerScreen extends StatefulWidget {
   final VoidCallback? onNavigateToMasjid;
@@ -38,8 +41,19 @@ class _PrayerScreenState extends State<PrayerScreen> with SingleTickerProviderSt
   Widget build(BuildContext context) {
     return Consumer<PrayerProvider>(
       builder: (context, provider, _) {
+        final cs = Theme.of(context).colorScheme;
         if (provider.isLoading && provider.prayerTimes.isEmpty) {
-          return Center(child: SizedBox(width: 28, height: 28, child: CircularProgressIndicator(color: AppTheme.gold.withValues(alpha: 0.5), strokeWidth: 2)));
+          return SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(0, 6, 0, 0),
+            child: Column(
+              children: [
+                const SizedBox(height: 60),
+                const ShimmerCountdownBar(),
+                const SizedBox(height: 12),
+                const ShimmerPrayerCard(),
+              ],
+            ),
+          );
         }
         if (provider.errorMessage != null && provider.prayerTimes.isEmpty) {
           return _errorState(provider);
@@ -51,7 +65,7 @@ class _PrayerScreenState extends State<PrayerScreen> with SingleTickerProviderSt
         return LayoutBuilder(
           builder: (context, constraints) {
             return RefreshIndicator(
-              color: AppTheme.gold,
+              color: cs.goldAccent,
               onRefresh: provider.loadTimes,
               child: SingleChildScrollView(
                 physics: const AlwaysScrollableScrollPhysics(),
@@ -63,7 +77,7 @@ class _PrayerScreenState extends State<PrayerScreen> with SingleTickerProviderSt
                       children: [
                         _header(provider),
                         const SizedBox(height: 8),
-                        _ornament(),
+                        const OrnamentDivider(),
                         const SizedBox(height: 10),
                         _countdownBar(provider),
                         const SizedBox(height: 12),
@@ -73,7 +87,7 @@ class _PrayerScreenState extends State<PrayerScreen> with SingleTickerProviderSt
                           _expandable(
                             title: "Jumu'ah",
                             icon: Icons.auto_awesome_rounded,
-                            color: AppTheme.sageDark,
+                            color: cs.sageDarkAccent,
                             expanded: _jumuahExpanded,
                             onTap: () => setState(() => _jumuahExpanded = !_jumuahExpanded),
                             child: JumuahBanner(jumuah: provider.jumuah!),
@@ -84,7 +98,7 @@ class _PrayerScreenState extends State<PrayerScreen> with SingleTickerProviderSt
                           _expandable(
                             title: 'Announcements',
                             icon: Icons.campaign_rounded,
-                            color: AppTheme.duckDark,
+                            color: cs.duckDarkAccent,
                             badge: provider.announcements.length,
                             expanded: _announcementsExpanded,
                             onTap: () => setState(() => _announcementsExpanded = !_announcementsExpanded),
@@ -113,6 +127,7 @@ class _PrayerScreenState extends State<PrayerScreen> with SingleTickerProviderSt
   // ═══════════════════════════════════════════════════════════
 
   Widget _header(PrayerProvider p) {
+    final cs = Theme.of(context).colorScheme;
     final hijri = HijriCalendar.now();
     final hijriStr = '${hijri.hDay} ${hijri.longMonthName} ${hijri.hYear} AH';
 
@@ -120,51 +135,35 @@ class _PrayerScreenState extends State<PrayerScreen> with SingleTickerProviderSt
       children: [
         Text(
           _greeting().toUpperCase(),
-          style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 3, color: AppTheme.gold.withValues(alpha: 0.6)),
+          style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 3, color: cs.goldDarkAccent),
         ),
         const SizedBox(height: 4),
         Text(
           _fmtDate(p.currentDate),
-          style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: AppTheme.charcoal, letterSpacing: -0.3),
+          style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: cs.onSurface, letterSpacing: -0.3),
         ),
         const SizedBox(height: 3),
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text(hijriStr, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w500, color: AppTheme.gold.withValues(alpha: 0.6))),
+            Text(hijriStr, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w500, color: cs.goldDarkAccent)),
             if (p.hasMasjid) ...[
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 8),
-                child: Text('·', style: TextStyle(fontSize: 11, color: AppTheme.muted.withValues(alpha: 0.3))),
+                child: Text('·', style: TextStyle(fontSize: 11, color: cs.hintText)),
               ),
-              Icon(Icons.mosque_rounded, size: 11, color: AppTheme.sageDark.withValues(alpha: 0.5)),
+              Icon(Icons.mosque_rounded, size: 11, color: cs.sageDarkAccent),
               const SizedBox(width: 4),
               Flexible(
                 child: Text(
                   p.selectedMasjidName,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppTheme.sageDark.withValues(alpha: 0.65)),
+                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: cs.sageDarkAccent),
                 ),
               ),
             ],
           ],
         ),
-      ],
-    );
-  }
-
-  Widget _ornament() {
-    return Row(
-      children: [
-        Expanded(child: Container(height: 0.5, color: AppTheme.goldLight.withValues(alpha: 0.45))),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 14),
-          child: Transform.rotate(
-            angle: pi / 4,
-            child: Container(width: 4.5, height: 4.5, decoration: BoxDecoration(border: Border.all(color: AppTheme.gold.withValues(alpha: 0.45), width: 0.7))),
-          ),
-        ),
-        Expanded(child: Container(height: 0.5, color: AppTheme.goldLight.withValues(alpha: 0.45))),
       ],
     );
   }
@@ -178,6 +177,7 @@ class _PrayerScreenState extends State<PrayerScreen> with SingleTickerProviderSt
       return _allDoneStrip();
     }
 
+    final cs = Theme.of(context).colorScheme;
     final prayer = p.nextPrayer!;
     final rem = p.timeToNextPrayer!;
     final accent = prayer.prayer.accentDark;
@@ -190,12 +190,12 @@ class _PrayerScreenState extends State<PrayerScreen> with SingleTickerProviderSt
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(18),
         gradient: LinearGradient(
-          colors: [Colors.white, accentLight.withValues(alpha: 0.06)],
+          colors: [cs.surface, accentLight.withValues(alpha: 0.08)],
           begin: Alignment.centerLeft,
           end: Alignment.centerRight,
         ),
-        border: Border.all(color: accent.withValues(alpha: 0.1)),
-        boxShadow: [BoxShadow(color: accent.withValues(alpha: 0.06), blurRadius: 14, offset: const Offset(0, 4))],
+        border: Border.all(color: accent.withValues(alpha: 0.15)),
+        boxShadow: [BoxShadow(color: accent.withValues(alpha: 0.08), blurRadius: 14, offset: const Offset(0, 4))],
       ),
       child: Column(
         children: [
@@ -215,12 +215,12 @@ class _PrayerScreenState extends State<PrayerScreen> with SingleTickerProviderSt
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('NEXT', style: TextStyle(fontSize: 8, fontWeight: FontWeight.w700, letterSpacing: 2, color: AppTheme.muted.withValues(alpha: 0.4))),
+                    Text('NEXT', style: TextStyle(fontSize: 8, fontWeight: FontWeight.w700, letterSpacing: 2, color: cs.hintText)),
                     Row(
                       children: [
-                        Text(prayer.prayer.displayName, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: AppTheme.charcoal, letterSpacing: -0.3)),
+                        Text(prayer.prayer.displayName, style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: cs.onSurface, letterSpacing: -0.3)),
                         const SizedBox(width: 5),
-                        Text(prayer.prayer.arabicName, style: TextStyle(fontSize: 13, color: accent.withValues(alpha: 0.3))),
+                        Text(prayer.prayer.arabicName, style: TextStyle(fontSize: 13, color: cs.hintText)),
                       ],
                     ),
                   ],
@@ -241,12 +241,12 @@ class _PrayerScreenState extends State<PrayerScreen> with SingleTickerProviderSt
           const SizedBox(height: 8),
           Row(
             children: [
-              Text('Athan ', style: TextStyle(fontSize: 9, fontWeight: FontWeight.w600, color: AppTheme.muted.withValues(alpha: 0.4))),
-              Text(PrayerTime.formatTime(prayer.athanTime), style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppTheme.charcoal)),
+              Text('Athan ', style: TextStyle(fontSize: 9, fontWeight: FontWeight.w600, color: cs.hintText)),
+              Text(PrayerTime.formatTime(prayer.athanTime), style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: cs.onSurface)),
               if (prayer.iqamahTime != null) ...[
-                Text('  ·  ', style: TextStyle(color: AppTheme.creamDark)),
-                Text('Iqamah ', style: TextStyle(fontSize: 9, fontWeight: FontWeight.w600, color: AppTheme.muted.withValues(alpha: 0.4))),
-                Text(PrayerTime.formatTime(prayer.iqamahTime), style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppTheme.sageDark)),
+                Text('  ·  ', style: TextStyle(color: cs.outline)),
+                Text('Iqamah ', style: TextStyle(fontSize: 9, fontWeight: FontWeight.w600, color: cs.hintText)),
+                Text(PrayerTime.formatTime(prayer.iqamahTime), style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: cs.sageDarkAccent)),
               ],
               const Spacer(),
             ],
@@ -258,8 +258,8 @@ class _PrayerScreenState extends State<PrayerScreen> with SingleTickerProviderSt
               height: 2.5,
               child: LinearProgressIndicator(
                 value: progress.clamp(0.0, 1.0),
-                backgroundColor: accent.withValues(alpha: 0.08),
-                valueColor: AlwaysStoppedAnimation(accent.withValues(alpha: 0.65)),
+                backgroundColor: accent.withValues(alpha: 0.12),
+                valueColor: AlwaysStoppedAnimation(accent.withValues(alpha: 0.75)),
               ),
             ),
           ),
@@ -269,12 +269,13 @@ class _PrayerScreenState extends State<PrayerScreen> with SingleTickerProviderSt
   }
 
   Widget _allDoneStrip() {
+    final cs = Theme.of(context).colorScheme;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: cs.surface,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: AppTheme.sage.withValues(alpha: 0.1)),
+        border: Border.all(color: AppTheme.sage.withValues(alpha: 0.15)),
       ),
       child: Row(
         children: [
@@ -282,17 +283,17 @@ class _PrayerScreenState extends State<PrayerScreen> with SingleTickerProviderSt
             width: 36, height: 36,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(12),
-              color: AppTheme.sageDark.withValues(alpha: 0.08),
+              color: cs.sageDarkAccent.withValues(alpha: 0.1),
             ),
-            child: const Icon(Icons.check_circle_rounded, size: 20, color: AppTheme.sageDark),
+            child: Icon(Icons.check_circle_rounded, size: 20, color: cs.sageDarkAccent),
           ),
           const SizedBox(width: 12),
-          const Expanded(
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('All prayers completed', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppTheme.charcoal)),
-                Text('See you tomorrow, In Sha Allah', style: TextStyle(fontSize: 11, color: AppTheme.muted)),
+                Text('All prayers completed', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: cs.onSurface)),
+                Text('See you tomorrow, In Sha Allah', style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant)),
               ],
             ),
           ),
@@ -306,13 +307,14 @@ class _PrayerScreenState extends State<PrayerScreen> with SingleTickerProviderSt
   // ═══════════════════════════════════════════════════════════
 
   Widget _prayerCard(PrayerProvider p) {
+    final cs = Theme.of(context).colorScheme;
     final prayers = p.fivePrayers;
 
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: cs.surface,
         borderRadius: BorderRadius.circular(20),
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 10, offset: const Offset(0, 4))],
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 4))],
       ),
       clipBehavior: Clip.antiAlias,
       child: Column(
@@ -335,21 +337,22 @@ class _PrayerScreenState extends State<PrayerScreen> with SingleTickerProviderSt
   }
 
   Widget _columnHeader() {
+    final cs = Theme.of(context).colorScheme;
     return Container(
-      padding: const EdgeInsets.fromLTRB(58, 8, 16, 6),
+      padding: const EdgeInsets.fromLTRB(58, 8, 8, 6),
       decoration: BoxDecoration(
-        color: AppTheme.cream.withValues(alpha: 0.5),
-        border: Border(bottom: BorderSide(color: AppTheme.creamDark.withValues(alpha: 0.4))),
+        color: Theme.of(context).scaffoldBackgroundColor.withValues(alpha: 0.5),
+        border: Border(bottom: BorderSide(color: cs.outline)),
       ),
       child: Row(
         children: [
           const Expanded(child: SizedBox()),
-          Text('ATHAN', style: TextStyle(fontSize: 8, fontWeight: FontWeight.w700, letterSpacing: 1.5, color: AppTheme.muted.withValues(alpha: 0.35))),
-          SizedBox(width: 10),
-          Container(width: 1, height: 10, color: AppTheme.creamDark.withValues(alpha: 0.3)),
+          Text('ATHAN', style: TextStyle(fontSize: 8, fontWeight: FontWeight.w700, letterSpacing: 1.5, color: cs.hintText)),
+          const SizedBox(width: 7),
+          Container(width: 1, height: 10, color: cs.outline),
           SizedBox(
-            width: 72,
-            child: Text('IQAMAH', textAlign: TextAlign.end, style: TextStyle(fontSize: 8, fontWeight: FontWeight.w700, letterSpacing: 1.5, color: AppTheme.muted.withValues(alpha: 0.35))),
+            width: 60,
+            child: Text('IQAMAH', textAlign: TextAlign.end, style: TextStyle(fontSize: 8, fontWeight: FontWeight.w700, letterSpacing: 1.5, color: cs.hintText)),
           ),
         ],
       ),
@@ -357,9 +360,10 @@ class _PrayerScreenState extends State<PrayerScreen> with SingleTickerProviderSt
   }
 
   Widget _prayerRow(PrayerTime pt, {required bool isNext, required bool isCurrent, required bool isPast, required bool isLast}) {
+    final cs = Theme.of(context).colorScheme;
     final accent = pt.prayer.accentDark;
     final accentLight = pt.prayer.accentLight;
-    final dim = isPast ? 0.38 : 1.0;
+    final dim = isPast ? 0.45 : 1.0;
 
     return AnimatedBuilder(
       animation: _pulseCtrl,
@@ -369,9 +373,9 @@ class _PrayerScreenState extends State<PrayerScreen> with SingleTickerProviderSt
         return Container(
           decoration: BoxDecoration(
             color: isNext
-                ? accent.withValues(alpha: 0.04)
+                ? accent.withValues(alpha: 0.05)
                 : isCurrent
-                    ? AppTheme.sageDark.withValues(alpha: 0.025)
+                    ? cs.sageDarkAccent.withValues(alpha: 0.04)
                     : null,
             border: Border(
               left: BorderSide(
@@ -379,10 +383,10 @@ class _PrayerScreenState extends State<PrayerScreen> with SingleTickerProviderSt
                 color: isNext
                     ? accent.withValues(alpha: glowAlpha)
                     : isCurrent
-                        ? AppTheme.sageDark.withValues(alpha: 0.45)
+                        ? cs.sageDarkAccent.withValues(alpha: 0.5)
                         : isPast
-                            ? accentLight.withValues(alpha: 0.15)
-                            : accentLight.withValues(alpha: 0.25),
+                            ? accentLight.withValues(alpha: 0.25)
+                            : accentLight.withValues(alpha: 0.4),
               ),
             ),
           ),
@@ -405,15 +409,15 @@ class _PrayerScreenState extends State<PrayerScreen> with SingleTickerProviderSt
                             style: TextStyle(
                               fontSize: 15,
                               fontWeight: isNext || isCurrent ? FontWeight.w700 : FontWeight.w600,
-                              color: AppTheme.charcoal.withValues(alpha: dim),
+                              color: cs.onSurface.withValues(alpha: dim),
                             ),
                           ),
                           const SizedBox(width: 5),
                           Text(
                             pt.prayer.arabicName,
-                            style: TextStyle(fontSize: 12, color: AppTheme.muted.withValues(alpha: isPast ? 0.18 : 0.3)),
+                            style: TextStyle(fontSize: 12, color: isPast ? cs.hintText.withValues(alpha: 0.5) : cs.hintText),
                           ),
-                          if (isCurrent) ...[const SizedBox(width: 6), _chip('NOW', AppTheme.sageDark)],
+                          if (isCurrent) ...[const SizedBox(width: 6), _chip('NOW', cs.sageDarkAccent)],
                           if (isNext) ...[const SizedBox(width: 6), _chip('NEXT', accent)],
                         ],
                       ),
@@ -425,14 +429,14 @@ class _PrayerScreenState extends State<PrayerScreen> with SingleTickerProviderSt
                       style: TextStyle(
                         fontSize: 13.5,
                         fontWeight: FontWeight.w700,
-                        color: AppTheme.charcoal.withValues(alpha: dim),
+                        color: cs.onSurface.withValues(alpha: dim),
                         fontFeatures: const [FontFeature.tabularFigures()],
                       ),
                     ),
-                    Container(width: 1, height: 20, color: AppTheme.creamDark.withValues(alpha: 0.3), margin: const EdgeInsets.symmetric(horizontal: 10)),
+                    Container(width: 1, height: 20, color: cs.outline, margin: const EdgeInsets.symmetric(horizontal: 7)),
                     // Iqamah time
                     SizedBox(
-                      width: 62,
+                      width: 56,
                       child: Text(
                         PrayerTime.formatTime(pt.iqamahTime),
                         textAlign: TextAlign.end,
@@ -440,8 +444,8 @@ class _PrayerScreenState extends State<PrayerScreen> with SingleTickerProviderSt
                           fontSize: 13.5,
                           fontWeight: FontWeight.w600,
                           color: pt.iqamahTime != null
-                              ? AppTheme.sageDark.withValues(alpha: dim)
-                              : AppTheme.muted.withValues(alpha: 0.15),
+                              ? cs.sageDarkAccent.withValues(alpha: dim)
+                              : cs.hintText.withValues(alpha: 0.4),
                           fontFeatures: const [FontFeature.tabularFigures()],
                         ),
                       ),
@@ -452,7 +456,7 @@ class _PrayerScreenState extends State<PrayerScreen> with SingleTickerProviderSt
               if (!isLast)
                 Padding(
                   padding: const EdgeInsets.only(left: 48),
-                  child: Divider(height: 1, thickness: 0.4, color: AppTheme.creamDark.withValues(alpha: 0.35)),
+                  child: Divider(height: 1, thickness: 0.4, color: cs.outline),
                 ),
             ],
           ),
@@ -463,6 +467,7 @@ class _PrayerScreenState extends State<PrayerScreen> with SingleTickerProviderSt
 
   /// Beautiful prayer-specific icon badges
   Widget _prayerIcon(Prayer prayer, {required bool isNext, required bool isCurrent, required bool isPast}) {
+    final cs = Theme.of(context).colorScheme;
     final accent = prayer.accentDark;
     final accentLight = prayer.accentLight;
     const size = 34.0;
@@ -486,10 +491,10 @@ class _PrayerScreenState extends State<PrayerScreen> with SingleTickerProviderSt
         width: size, height: size,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(11),
-          color: AppTheme.sageDark.withValues(alpha: 0.08),
-          border: Border.all(color: AppTheme.sageDark.withValues(alpha: 0.22), width: 1.2),
+          color: cs.sageDarkAccent.withValues(alpha: 0.1),
+          border: Border.all(color: cs.sageDarkAccent.withValues(alpha: 0.3), width: 1.2),
         ),
-        child: Icon(prayer.icon, size: 17, color: AppTheme.sageDark),
+        child: Icon(prayer.icon, size: 17, color: cs.sageDarkAccent),
       );
     }
 
@@ -501,9 +506,9 @@ class _PrayerScreenState extends State<PrayerScreen> with SingleTickerProviderSt
             width: size, height: size,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(11),
-              color: AppTheme.creamDark.withValues(alpha: 0.4),
+              color: cs.outline.withValues(alpha: 0.5),
             ),
-            child: Icon(prayer.icon, size: 16, color: accent.withValues(alpha: 0.22)),
+            child: Icon(prayer.icon, size: 16, color: accent.withValues(alpha: 0.35)),
           ),
           Positioned(
             right: 0, bottom: 0,
@@ -511,10 +516,10 @@ class _PrayerScreenState extends State<PrayerScreen> with SingleTickerProviderSt
               width: 13, height: 13,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: Colors.white,
-                border: Border.all(color: AppTheme.sage.withValues(alpha: 0.3), width: 0.8),
+                color: cs.surface,
+                border: Border.all(color: AppTheme.sage.withValues(alpha: 0.4), width: 0.8),
               ),
-              child: Icon(Icons.check_rounded, size: 8, color: AppTheme.sage.withValues(alpha: 0.6)),
+              child: Icon(Icons.check_rounded, size: 8, color: cs.sageAccent),
             ),
           ),
         ],
@@ -526,10 +531,10 @@ class _PrayerScreenState extends State<PrayerScreen> with SingleTickerProviderSt
       width: size, height: size,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(11),
-        color: accentLight.withValues(alpha: 0.12),
-        border: Border.all(color: accent.withValues(alpha: 0.08)),
+        color: accentLight.withValues(alpha: 0.15),
+        border: Border.all(color: accent.withValues(alpha: 0.12)),
       ),
-      child: Icon(prayer.icon, size: 16, color: accent.withValues(alpha: 0.45)),
+      child: Icon(prayer.icon, size: 16, color: accent.withValues(alpha: 0.6)),
     );
   }
 
@@ -537,7 +542,7 @@ class _PrayerScreenState extends State<PrayerScreen> with SingleTickerProviderSt
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
+        color: color.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(5),
       ),
       child: Text(label, style: TextStyle(fontSize: 7.5, fontWeight: FontWeight.w800, letterSpacing: 0.8, color: color)),
@@ -545,20 +550,21 @@ class _PrayerScreenState extends State<PrayerScreen> with SingleTickerProviderSt
   }
 
   Widget _sunStrip(PrayerProvider p) {
+    final cs = Theme.of(context).colorScheme;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      decoration: BoxDecoration(color: AppTheme.cream.withValues(alpha: 0.45)),
+      decoration: BoxDecoration(color: Theme.of(context).scaffoldBackgroundColor.withValues(alpha: 0.5)),
       child: Row(
         children: [
-          Icon(Icons.wb_sunny_rounded, size: 13, color: AppTheme.gold.withValues(alpha: 0.55)),
+          Icon(Icons.wb_sunny_rounded, size: 13, color: cs.goldAccent),
           const SizedBox(width: 5),
-          Text('Sunrise ', style: TextStyle(fontSize: 10, color: AppTheme.muted.withValues(alpha: 0.45))),
-          Text(PrayerTime.formatTime(p.sunrise?.athanTime), style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppTheme.charcoal.withValues(alpha: 0.5))),
+          Text('Sunrise ', style: TextStyle(fontSize: 10, color: cs.hintText)),
+          Text(PrayerTime.formatTime(p.sunrise?.athanTime), style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: cs.onSurfaceVariant)),
           const Spacer(),
-          Icon(Icons.wb_twilight_rounded, size: 13, color: AppTheme.goldDark.withValues(alpha: 0.55)),
+          Icon(Icons.wb_twilight_rounded, size: 13, color: cs.goldDarkAccent),
           const SizedBox(width: 5),
-          Text('Sunset ', style: TextStyle(fontSize: 10, color: AppTheme.muted.withValues(alpha: 0.45))),
-          Text(PrayerTime.formatTime(p.sunset?.athanTime), style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppTheme.charcoal.withValues(alpha: 0.5))),
+          Text('Sunset ', style: TextStyle(fontSize: 10, color: cs.hintText)),
+          Text(PrayerTime.formatTime(p.sunset?.athanTime), style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: cs.onSurfaceVariant)),
         ],
       ),
     );
@@ -577,6 +583,7 @@ class _PrayerScreenState extends State<PrayerScreen> with SingleTickerProviderSt
     required VoidCallback onTap,
     required Widget child,
   }) {
+    final cs = Theme.of(context).colorScheme;
     return Column(
       children: [
         GestureDetector(
@@ -585,26 +592,26 @@ class _PrayerScreenState extends State<PrayerScreen> with SingleTickerProviderSt
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: cs.surface,
               borderRadius: expanded
                   ? const BorderRadius.vertical(top: Radius.circular(16))
                   : BorderRadius.circular(16),
-              boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.025), blurRadius: 4, offset: const Offset(0, 2))],
+              boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 4, offset: const Offset(0, 2))],
             ),
             child: Row(
               children: [
                 Container(
                   width: 26, height: 26,
-                  decoration: BoxDecoration(shape: BoxShape.circle, color: color.withValues(alpha: 0.08)),
-                  child: Icon(icon, size: 13, color: color.withValues(alpha: 0.65)),
+                  decoration: BoxDecoration(shape: BoxShape.circle, color: color.withValues(alpha: 0.1)),
+                  child: Icon(icon, size: 13, color: color),
                 ),
                 const SizedBox(width: 8),
-                Text(title, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.charcoal)),
+                Text(title, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: cs.onSurface)),
                 if (badge != null) ...[
                   const SizedBox(width: 6),
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
-                    decoration: BoxDecoration(color: color.withValues(alpha: 0.08), borderRadius: BorderRadius.circular(8)),
+                    decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
                     child: Text('$badge', style: TextStyle(fontSize: 9, fontWeight: FontWeight.w700, color: color)),
                   ),
                 ],
@@ -612,7 +619,7 @@ class _PrayerScreenState extends State<PrayerScreen> with SingleTickerProviderSt
                 AnimatedRotation(
                   turns: expanded ? 0.5 : 0.0,
                   duration: const Duration(milliseconds: 200),
-                  child: Icon(Icons.keyboard_arrow_down_rounded, size: 18, color: AppTheme.muted.withValues(alpha: 0.3)),
+                  child: Icon(Icons.keyboard_arrow_down_rounded, size: 18, color: cs.hintText),
                 ),
               ],
             ),
@@ -621,9 +628,9 @@ class _PrayerScreenState extends State<PrayerScreen> with SingleTickerProviderSt
         AnimatedCrossFade(
           firstChild: const SizedBox(width: double.infinity),
           secondChild: Container(
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.vertical(bottom: Radius.circular(16)),
+            decoration: BoxDecoration(
+              color: cs.surface,
+              borderRadius: const BorderRadius.vertical(bottom: Radius.circular(16)),
             ),
             padding: const EdgeInsets.fromLTRB(10, 0, 10, 10),
             child: child,
@@ -641,69 +648,20 @@ class _PrayerScreenState extends State<PrayerScreen> with SingleTickerProviderSt
   // ═══════════════════════════════════════════════════════════
 
   Widget _emptyState() {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(40),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 72, height: 72,
-              decoration: BoxDecoration(shape: BoxShape.circle, color: AppTheme.goldLight.withValues(alpha: 0.15)),
-              child: Icon(Icons.mosque_rounded, size: 32, color: AppTheme.gold.withValues(alpha: 0.7)),
-            ),
-            const SizedBox(height: 24),
-            const Text('Assalamu Alaikum', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: AppTheme.charcoal)),
-            const SizedBox(height: 8),
-            Text(
-              'Select your local masjid to see\nprayer times and iqamah schedules',
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 14, color: AppTheme.muted.withValues(alpha: 0.7), height: 1.5),
-            ),
-            const SizedBox(height: 28),
-            if (widget.onNavigateToMasjid != null)
-              GestureDetector(
-                onTap: widget.onNavigateToMasjid,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 26, vertical: 13),
-                  decoration: BoxDecoration(
-                    gradient: AppTheme.goldGradient,
-                    borderRadius: BorderRadius.circular(22),
-                    boxShadow: [BoxShadow(color: AppTheme.gold.withValues(alpha: 0.3), blurRadius: 14, offset: const Offset(0, 6))],
-                  ),
-                  child: const Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.mosque_rounded, size: 16, color: Colors.white),
-                      SizedBox(width: 8),
-                      Text('Find a Masjid', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Colors.white)),
-                    ],
-                  ),
-                ),
-              ),
-          ],
-        ),
-      ),
+    return EmptyState(
+      icon: Icons.mosque_rounded,
+      title: 'Assalamu Alaikum',
+      subtitle: 'Select your local masjid to see\nprayer times and iqamah schedules',
+      actionLabel: widget.onNavigateToMasjid != null ? 'Find a Masjid' : null,
+      actionIcon: widget.onNavigateToMasjid != null ? Icons.mosque_rounded : null,
+      onAction: widget.onNavigateToMasjid,
     );
   }
 
   Widget _errorState(PrayerProvider p) {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.cloud_off_rounded, size: 40, color: AppTheme.muted.withValues(alpha: 0.2)),
-          const SizedBox(height: 14),
-          Text(p.errorMessage!, style: TextStyle(fontSize: 14, color: AppTheme.muted.withValues(alpha: 0.6))),
-          const SizedBox(height: 16),
-          TextButton.icon(
-            onPressed: p.loadTimes,
-            icon: const Icon(Icons.refresh_rounded, size: 16),
-            label: const Text('Retry'),
-            style: TextButton.styleFrom(foregroundColor: AppTheme.gold),
-          ),
-        ],
-      ),
+    return ErrorState(
+      message: p.errorMessage!,
+      onRetry: p.loadTimes,
     );
   }
 
@@ -712,10 +670,7 @@ class _PrayerScreenState extends State<PrayerScreen> with SingleTickerProviderSt
   // ═══════════════════════════════════════════════════════════
 
   String _greeting() {
-    final h = DateTime.now().hour;
-    if (h < 12) return 'Good Morning';
-    if (h < 17) return 'Good Afternoon';
-    return 'Good Evening';
+    return 'Assalamu Alaikum';
   }
 
   String _fmtDate(DateTime d) {

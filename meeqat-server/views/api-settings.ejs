@@ -1,7 +1,7 @@
 <%- include('partials/head') %>
 <%- include('partials/header') %>
 
-<main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+<main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
   <div class="flex gap-8">
     <%- include('partials/sidebar') %>
 
@@ -11,7 +11,7 @@
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
           Dashboard
         </a>
-        <h1 class="text-2xl font-semibold text-charcoal mt-2">API Settings</h1>
+        <h1 class="text-xl sm:text-2xl font-semibold text-charcoal mt-2">API Settings</h1>
         <p class="text-muted text-sm mt-1">Configure location and calculation method for prayer times</p>
       </div>
 
@@ -30,17 +30,17 @@
       <% } %>
 
       <!-- Location Search -->
-      <div class="bg-white rounded-2xl shadow-sm border border-cream-200 p-6 mb-6">
+      <div class="bg-white rounded-2xl shadow-sm border border-cream-200 p-4 sm:p-6 mb-6">
         <h3 class="text-sm font-semibold text-charcoal mb-4 flex items-center gap-2">
           <svg class="w-4 h-4 text-duck-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
           Search Location
         </h3>
-        <div class="flex gap-3">
+        <div class="flex flex-col sm:flex-row gap-3">
           <input type="text" id="location-search" placeholder="e.g., Mecca, Saudi Arabia"
             class="flex-1 px-4 py-3 rounded-xl border border-cream-200 bg-cream-50 text-charcoal focus:outline-none focus:ring-2 focus:ring-duck-400 text-sm"
             onkeydown="if(event.key==='Enter'){event.preventDefault(); searchLocation();}">
           <button type="button" onclick="searchLocation()"
-            class="px-5 py-3 bg-duck-400 text-white rounded-xl text-sm font-medium hover:bg-duck-500 transition-colors shrink-0">
+            class="px-5 py-3 bg-duck-400 text-white rounded-xl text-sm font-medium hover:bg-duck-500 transition-colors shrink-0 w-full sm:w-auto">
             Search
           </button>
         </div>
@@ -49,7 +49,7 @@
       </div>
 
       <!-- Settings Form -->
-      <div class="bg-white rounded-2xl shadow-sm border border-cream-200 p-6">
+      <div class="bg-white rounded-2xl shadow-sm border border-cream-200 p-4 sm:p-6">
         <form method="POST" action="/admin/api-settings">
           <div class="space-y-5">
             <!-- Current location display -->
@@ -64,19 +64,19 @@
               </p>
             </div>
 
-            <div class="grid grid-cols-2 gap-4">
+            <div class="grid grid-cols-2 gap-3 sm:gap-4">
               <div>
                 <label class="block text-sm font-medium text-charcoal mb-1.5">Latitude</label>
                 <input type="number" step="any" name="latitude" id="lat-input"
                   value="<%= masjid.latitude || '' %>"
-                  class="w-full px-4 py-3 rounded-xl border border-cream-200 bg-cream-50 text-charcoal focus:outline-none focus:ring-2 focus:ring-gold-400 text-sm"
+                  class="w-full px-3 sm:px-4 py-3 rounded-xl border border-cream-200 bg-cream-50 text-charcoal focus:outline-none focus:ring-2 focus:ring-gold-400 text-sm"
                   placeholder="34.6834">
               </div>
               <div>
                 <label class="block text-sm font-medium text-charcoal mb-1.5">Longitude</label>
                 <input type="number" step="any" name="longitude" id="lng-input"
                   value="<%= masjid.longitude || '' %>"
-                  class="w-full px-4 py-3 rounded-xl border border-cream-200 bg-cream-50 text-charcoal focus:outline-none focus:ring-2 focus:ring-gold-400 text-sm"
+                  class="w-full px-3 sm:px-4 py-3 rounded-xl border border-cream-200 bg-cream-50 text-charcoal focus:outline-none focus:ring-2 focus:ring-gold-400 text-sm"
                   placeholder="-82.8374">
               </div>
             </div>
@@ -108,11 +108,11 @@
             <div id="preview-section" class="hidden">
               <div class="h-px bg-cream-200 my-2"></div>
               <p class="text-xs text-muted uppercase tracking-wider font-medium mb-3">Preview (Today's Times)</p>
-              <div id="preview-times" class="grid grid-cols-2 sm:grid-cols-4 gap-2"></div>
+              <div id="preview-times" class="grid grid-cols-3 sm:grid-cols-6 gap-2"></div>
             </div>
           </div>
 
-          <div class="flex gap-3 mt-8">
+          <div class="flex flex-col sm:flex-row gap-3 mt-8">
             <button type="submit"
               class="flex-1 bg-gradient-to-r from-gold-400 to-gold-500 text-white font-medium py-3 rounded-xl hover:from-gold-500 hover:to-gold-600 transition-all shadow-sm text-sm active:scale-[0.98]">
               Save API Settings
@@ -130,21 +130,21 @@
 
 <script>
 async function searchLocation() {
-  const query = document.getElementById('location-search').value.trim();
+  var query = document.getElementById('location-search').value.trim();
   if (!query) return;
 
-  const resultsDiv = document.getElementById('search-results');
-  const errorDiv = document.getElementById('search-error');
+  var resultsDiv = document.getElementById('search-results');
+  var errorDiv = document.getElementById('search-error');
   resultsDiv.classList.add('hidden');
   errorDiv.classList.add('hidden');
   resultsDiv.innerHTML = '<p class="text-xs text-muted">Searching...</p>';
   resultsDiv.classList.remove('hidden');
 
   try {
-    const res = await fetch('https://nominatim.openstreetmap.org/search?format=json&limit=5&q=' + encodeURIComponent(query), {
+    var res = await fetch('https://nominatim.openstreetmap.org/search?format=json&limit=5&q=' + encodeURIComponent(query), {
       headers: { 'User-Agent': 'MeeqatAdmin/1.0' }
     });
-    const data = await res.json();
+    var data = await res.json();
 
     if (!data.length) {
       resultsDiv.innerHTML = '<p class="text-xs text-muted">No results found. Try a different search term.</p>';
@@ -153,7 +153,7 @@ async function searchLocation() {
 
     resultsDiv.innerHTML = '';
     data.forEach(function(place) {
-      const btn = document.createElement('button');
+      var btn = document.createElement('button');
       btn.type = 'button';
       btn.className = 'w-full text-left px-4 py-3 rounded-xl border border-cream-200 hover:border-duck-400 hover:bg-duck-400/5 transition-all text-sm';
       btn.innerHTML = '<p class="font-medium text-charcoal">' + escapeHtml(place.display_name.split(',').slice(0, 3).join(',')) + '</p>'
@@ -174,32 +174,32 @@ async function searchLocation() {
 }
 
 async function previewTimes() {
-  const lat = document.getElementById('lat-input').value;
-  const lng = document.getElementById('lng-input').value;
-  const method = document.querySelector('select[name="calculation_method"]').value;
+  var lat = document.getElementById('lat-input').value;
+  var lng = document.getElementById('lng-input').value;
+  var method = document.querySelector('select[name="calculation_method"]').value;
 
   if (!lat || !lng) {
     alert('Enter latitude and longitude first.');
     return;
   }
 
-  const previewSection = document.getElementById('preview-section');
-  const previewTimes = document.getElementById('preview-times');
-  previewTimes.innerHTML = '<p class="col-span-full text-xs text-muted">Loading...</p>';
+  var previewSection = document.getElementById('preview-section');
+  var previewTimesEl = document.getElementById('preview-times');
+  previewTimesEl.innerHTML = '<p class="col-span-full text-xs text-muted">Loading...</p>';
   previewSection.classList.remove('hidden');
 
   try {
-    const today = new Date();
-    const dd = String(today.getDate()).padStart(2, '0');
-    const mm = String(today.getMonth() + 1).padStart(2, '0');
-    const yyyy = today.getFullYear();
+    var today = new Date();
+    var dd = String(today.getDate()).padStart(2, '0');
+    var mm = String(today.getMonth() + 1).padStart(2, '0');
+    var yyyy = today.getFullYear();
 
-    const res = await fetch('https://api.aladhan.com/v1/timings/' + dd + '-' + mm + '-' + yyyy + '?latitude=' + lat + '&longitude=' + lng + '&method=' + method);
-    const data = await res.json();
+    var res = await fetch('https://api.aladhan.com/v1/timings/' + dd + '-' + mm + '-' + yyyy + '?latitude=' + lat + '&longitude=' + lng + '&method=' + method);
+    var data = await res.json();
 
     if (data.code === 200) {
-      const t = data.data.timings;
-      const prayers = [
+      var t = data.data.timings;
+      var prayers = [
         { name: 'Fajr', time: t.Fajr, color: 'duck' },
         { name: 'Sunrise', time: t.Sunrise, color: 'gold' },
         { name: 'Dhuhr', time: t.Dhuhr, color: 'sage' },
@@ -208,22 +208,22 @@ async function previewTimes() {
         { name: 'Isha', time: t.Isha, color: 'sage' }
       ];
 
-      previewTimes.innerHTML = prayers.map(function(p) {
+      previewTimesEl.innerHTML = prayers.map(function(p) {
         return '<div class="bg-' + p.color + '-400/10 rounded-lg px-3 py-2 text-center">'
           + '<p class="text-[10px] text-muted uppercase tracking-wider">' + p.name + '</p>'
           + '<p class="text-sm font-semibold text-charcoal mt-0.5">' + p.time + '</p>'
           + '</div>';
       }).join('');
     } else {
-      previewTimes.innerHTML = '<p class="col-span-full text-xs text-red-500">Failed to fetch times. Check coordinates.</p>';
+      previewTimesEl.innerHTML = '<p class="col-span-full text-xs text-red-500">Failed to fetch times. Check coordinates.</p>';
     }
   } catch (err) {
-    previewTimes.innerHTML = '<p class="col-span-full text-xs text-red-500">Error: ' + err.message + '</p>';
+    previewTimesEl.innerHTML = '<p class="col-span-full text-xs text-red-500">Error: ' + err.message + '</p>';
   }
 }
 
 function escapeHtml(str) {
-  const div = document.createElement('div');
+  var div = document.createElement('div');
   div.textContent = str;
   return div.innerHTML;
 }

@@ -21,6 +21,10 @@ class PrayerProvider extends ChangeNotifier {
   int selectedMasjidId = 0;
   String selectedMasjidName = '';
 
+  // Notification state
+  bool notificationsEnabled = false;
+  Map<String, int> notificationTimings = {};
+
   PrayerProvider() {
     _timer = Timer.periodic(const Duration(seconds: 1), (_) {
       currentDate = DateTime.now();
@@ -115,6 +119,44 @@ class PrayerProvider extends ChangeNotifier {
     selectedMasjidName = prefs.getString('selectedMasjidName') ?? '';
     notifyListeners();
     await loadTimes();
+    await _loadNotificationTimings();
+  }
+
+  // ── Notification helpers ──
+
+  Future<void> _loadNotificationTimings() async {
+    final prefs = await SharedPreferences.getInstance();
+    notificationsEnabled = prefs.getBool('notifications_enabled') ?? false;
+    notificationTimings = await NotificationService.getAllTimings();
+    notifyListeners();
+  }
+
+  int getNotificationTiming(String key) {
+    if (key == 'jumuah') {
+      return notificationTimings[key] ?? NotificationService.defaultJumuahTiming;
+    }
+    final isAdhan = key.startsWith('adhan_');
+    return notificationTimings[key] ??
+        (isAdhan ? NotificationService.defaultAdhanTiming : NotificationService.defaultIqamahTiming);
+  }
+
+  Future<void> setNotificationTiming(String key, int minutes) async {
+    await NotificationService.setTimingForKey(key, minutes);
+    notificationTimings[key] = minutes;
+    notifyListeners();
+    NotificationService.schedulePrayerNotifications(prayerTimes, jumuah: jumuah);
+  }
+
+  Future<void> setNotificationsEnabled(bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('notifications_enabled', value);
+    notificationsEnabled = value;
+    notifyListeners();
+    if (value) {
+      NotificationService.schedulePrayerNotifications(prayerTimes, jumuah: jumuah);
+    } else {
+      await NotificationService.cancelAll();
+    }
   }
 
   Future<void> saveSettings() async {
@@ -145,7 +187,7 @@ class PrayerProvider extends ChangeNotifier {
       jumuah = await service.fetchJumuah(selectedMasjidId);
       announcements = await service.fetchAnnouncements(selectedMasjidId);
       // Schedule notifications for today's prayers
-      NotificationService.schedulePrayerNotifications(prayerTimes);
+      NotificationService.schedulePrayerNotifications(prayerTimes, jumuah: jumuah);
     } catch (e) {
       errorMessage = 'Unable to fetch prayer times';
     }

@@ -58,13 +58,14 @@ class _PrayerRowCardState extends State<PrayerRowCard>
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     final accent = widget.prayerTime.prayer.accentDark;
     final accentLight = widget.prayerTime.prayer.accentLight;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: cs.surface,
         borderRadius: BorderRadius.circular(18),
         border: widget.isNext
             ? Border.all(color: accent.withValues(alpha: 0.25), width: 1.5)
@@ -112,10 +113,10 @@ class _PrayerRowCardState extends State<PrayerRowCard>
                   children: [
                     Text(
                       widget.prayerTime.prayer.displayName,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
-                        color: AppTheme.charcoal,
+                        color: cs.onSurface,
                       ),
                     ),
                     const SizedBox(width: 6),
@@ -124,17 +125,17 @@ class _PrayerRowCardState extends State<PrayerRowCard>
                       style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w500,
-                        color: AppTheme.muted.withValues(alpha: 0.5),
+                        color: cs.hintText,
                       ),
                     ),
                   ],
                 ),
                 if (widget.isActive)
-                  const Text('Current', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: AppTheme.sageDark, letterSpacing: 0.5))
+                  Text('Current', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: cs.sageDarkAccent, letterSpacing: 0.5))
                 else if (widget.isNext)
                   Text('Up Next', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: accent, letterSpacing: 0.5))
                 else if (widget.prayerTime.source == 'override')
-                  Text('Masjid', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w500, color: AppTheme.muted.withValues(alpha: 0.6))),
+                  Text('Masjid', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w500, color: cs.hintText)),
               ],
             ),
           ),
@@ -145,15 +146,15 @@ class _PrayerRowCardState extends State<PrayerRowCard>
             children: [
               Text(
                 PrayerTime.formatTime(widget.prayerTime.athanTime),
-                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: AppTheme.charcoal),
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: cs.onSurface),
               ),
-              Text('Athan', style: TextStyle(fontSize: 9, fontWeight: FontWeight.w600, color: AppTheme.muted.withValues(alpha: 0.5))),
+              Text('Athan', style: TextStyle(fontSize: 9, fontWeight: FontWeight.w600, color: cs.hintText)),
             ],
           ),
 
           // Divider + Iqamah
           if (widget.prayerTime.prayer.hasIqamah) ...[
-            Container(width: 1, height: 28, color: AppTheme.creamDark, margin: const EdgeInsets.symmetric(horizontal: 10)),
+            Container(width: 1, height: 28, color: cs.outline, margin: const EdgeInsets.symmetric(horizontal: 10)),
             SizedBox(
               width: 68,
               child: Column(
@@ -164,10 +165,10 @@ class _PrayerRowCardState extends State<PrayerRowCard>
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w700,
-                      color: widget.prayerTime.iqamahTime != null ? AppTheme.sageDark : AppTheme.muted.withValues(alpha: 0.3),
+                      color: widget.prayerTime.iqamahTime != null ? cs.sageDarkAccent : cs.hintText,
                     ),
                   ),
-                  Text('Iqamah', style: TextStyle(fontSize: 9, fontWeight: FontWeight.w600, color: AppTheme.muted.withValues(alpha: 0.5))),
+                  Text('Iqamah', style: TextStyle(fontSize: 9, fontWeight: FontWeight.w600, color: cs.hintText)),
                 ],
               ),
             ),

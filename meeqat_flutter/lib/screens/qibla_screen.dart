@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_compass/flutter_compass.dart';
 import 'package:geolocator/geolocator.dart';
 import '../theme/app_theme.dart';
+import '../widgets/shimmer_loading.dart';
 
 class QiblaScreen extends StatefulWidget {
   const QiblaScreen({super.key});
@@ -91,17 +92,18 @@ class _QiblaScreenState extends State<QiblaScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return ListView(
       padding: const EdgeInsets.only(top: 16, bottom: 120),
       children: [
-        const Padding(
-          padding: EdgeInsets.fromLTRB(24, 8, 24, 24),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Qibla', style: TextStyle(fontSize: 28, fontWeight: FontWeight.w700, color: AppTheme.charcoal)),
-              SizedBox(height: 4),
-              Text('Face the direction of the Kaaba', style: TextStyle(fontSize: 14, color: AppTheme.muted)),
+              Text('Qibla', style: TextStyle(fontSize: 28, fontWeight: FontWeight.w700, color: cs.onSurface)),
+              const SizedBox(height: 4),
+              Text('Face the direction of the Kaaba', style: TextStyle(fontSize: 14, color: cs.onSurfaceVariant)),
             ],
           ),
         ),
@@ -117,32 +119,51 @@ class _QiblaScreenState extends State<QiblaScreen> {
   }
 
   Widget _buildLoading() {
-    return const Padding(
-      padding: EdgeInsets.only(top: 80),
+    final cs = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 40),
       child: Column(
         children: [
-          CircularProgressIndicator(color: AppTheme.gold),
-          SizedBox(height: 16),
-          Text('Finding your location...', style: TextStyle(fontSize: 14, color: AppTheme.muted)),
+          // Compass skeleton
+          Shimmer(
+            child: Container(
+              width: 280,
+              height: 280,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: cs.surface,
+              ),
+              child: Center(
+                child: ShimmerBone.circle(size: 52),
+              ),
+            ),
+          ),
+          const SizedBox(height: 32),
+          Shimmer(
+            child: ShimmerBone(width: 140, height: 36, borderRadius: 20),
+          ),
+          const SizedBox(height: 16),
+          Text('Finding your location...', style: TextStyle(fontSize: 14, color: cs.onSurfaceVariant)),
         ],
       ),
     );
   }
 
   Widget _buildError() {
+    final cs = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.only(top: 60),
       child: Column(
         children: [
-          Icon(Icons.location_off_rounded, size: 56, color: AppTheme.muted.withValues(alpha: 0.3)),
+          Icon(Icons.location_off_rounded, size: 56, color: cs.hintText),
           const SizedBox(height: 16),
-          Text(_error!, style: const TextStyle(fontSize: 15, color: AppTheme.muted)),
+          Text(_error!, style: TextStyle(fontSize: 15, color: cs.onSurfaceVariant)),
           const SizedBox(height: 16),
           TextButton.icon(
             onPressed: _initLocation,
             icon: const Icon(Icons.refresh, size: 18),
             label: const Text('Retry'),
-            style: TextButton.styleFrom(foregroundColor: AppTheme.gold),
+            style: TextButton.styleFrom(foregroundColor: cs.goldAccent),
           ),
         ],
       ),
@@ -150,6 +171,7 @@ class _QiblaScreenState extends State<QiblaScreen> {
   }
 
   Widget _buildCompass() {
+    final cs = Theme.of(context).colorScheme;
     final heading = _heading ?? 0;
     final qibla = _qiblaDirection ?? 0;
     final needle = (qibla - heading) * pi / 180;
@@ -166,7 +188,7 @@ class _QiblaScreenState extends State<QiblaScreen> {
             height: 280,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: Colors.white,
+              color: cs.surface,
               boxShadow: [
                 BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 20, offset: const Offset(0, 8)),
                 if (isAligned) BoxShadow(color: AppTheme.sage.withValues(alpha: 0.3), blurRadius: 30),
@@ -178,7 +200,11 @@ class _QiblaScreenState extends State<QiblaScreen> {
                 // Outer ring marks
                 CustomPaint(
                   size: const Size(280, 280),
-                  painter: _CompassPainter(heading: heading),
+                  painter: _CompassPainter(
+                    heading: heading,
+                    tickColor: cs.onSurfaceVariant,
+                    northColor: cs.goldDarkAccent,
+                  ),
                 ),
 
                 // Qibla needle
@@ -204,7 +230,7 @@ class _QiblaScreenState extends State<QiblaScreen> {
                         width: 2,
                         height: 60,
                         decoration: BoxDecoration(
-                          color: AppTheme.muted.withValues(alpha: 0.15),
+                          color: cs.outline,
                           borderRadius: BorderRadius.circular(2),
                         ),
                       ),
@@ -219,12 +245,12 @@ class _QiblaScreenState extends State<QiblaScreen> {
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     color: isAligned ? AppTheme.sage.withValues(alpha: 0.15) : AppTheme.goldLight.withValues(alpha: 0.2),
-                    border: Border.all(color: isAligned ? AppTheme.sage.withValues(alpha: 0.3) : AppTheme.gold.withValues(alpha: 0.3), width: 2),
+                    border: Border.all(color: isAligned ? AppTheme.sage.withValues(alpha: 0.4) : AppTheme.gold.withValues(alpha: 0.4), width: 2),
                   ),
                   child: Icon(
                     Icons.star_rounded,
                     size: 24,
-                    color: isAligned ? AppTheme.sageDark : AppTheme.gold,
+                    color: isAligned ? cs.sageDarkAccent : cs.goldAccent,
                   ),
                 ),
               ],
@@ -246,7 +272,7 @@ class _QiblaScreenState extends State<QiblaScreen> {
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w700,
-                color: isAligned ? AppTheme.sageDark : AppTheme.goldDark,
+                color: isAligned ? cs.sageDarkAccent : cs.goldDarkAccent,
               ),
             ),
           ),
@@ -257,20 +283,20 @@ class _QiblaScreenState extends State<QiblaScreen> {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: cs.surface,
               borderRadius: BorderRadius.circular(18),
               boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 6, offset: const Offset(0, 2))],
             ),
             child: Row(
               children: [
-                const Icon(Icons.info_outline_rounded, size: 18, color: AppTheme.muted),
+                Icon(Icons.info_outline_rounded, size: 18, color: cs.onSurfaceVariant),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
                     _compassAvailable
                         ? 'Hold your device flat and rotate until the needle points up'
                         : 'Compass not available on this device. Qibla is ${_qiblaDirection?.round()}° from North.',
-                    style: TextStyle(fontSize: 12, color: AppTheme.muted.withValues(alpha: 0.7)),
+                    style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
                   ),
                 ),
               ],
@@ -284,7 +310,9 @@ class _QiblaScreenState extends State<QiblaScreen> {
 
 class _CompassPainter extends CustomPainter {
   final double heading;
-  _CompassPainter({required this.heading});
+  final Color tickColor;
+  final Color northColor;
+  _CompassPainter({required this.heading, required this.tickColor, required this.northColor});
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -311,7 +339,7 @@ class _CompassPainter extends CustomPainter {
       canvas.drawLine(
         p1, p2,
         Paint()
-          ..color = isMajor ? const Color(0xFF6B5E50) : const Color(0xFF6B5E50).withValues(alpha: 0.2)
+          ..color = isMajor ? tickColor : tickColor.withValues(alpha: 0.3)
           ..strokeWidth = width
           ..strokeCap = StrokeCap.round,
       );
@@ -332,7 +360,7 @@ class _CompassPainter extends CustomPainter {
           style: TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.w700,
-            color: labels[i] == 'N' ? const Color(0xFFC9956B) : const Color(0xFF6B5E50).withValues(alpha: 0.5),
+            color: labels[i] == 'N' ? northColor : tickColor.withValues(alpha: 0.6),
           ),
         ),
         textDirection: TextDirection.ltr,
@@ -342,5 +370,6 @@ class _CompassPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant _CompassPainter old) => old.heading != heading;
+  bool shouldRepaint(covariant _CompassPainter old) =>
+      old.heading != heading || old.tickColor != tickColor || old.northColor != northColor;
 }

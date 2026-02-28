@@ -1,16 +1,16 @@
 <%- include('partials/head') %>
 <%- include('partials/header') %>
 
-<main class="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+<main class="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
   <div class="mb-8">
     <a href="/admin" class="inline-flex items-center gap-1 text-muted text-sm hover:text-charcoal transition-colors">
       <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
       Back to Dashboard
     </a>
-    <h1 class="text-2xl font-semibold text-charcoal mt-2">Edit Masjid</h1>
+    <h1 class="text-xl sm:text-2xl font-semibold text-charcoal mt-2">Edit Masjid</h1>
   </div>
 
-  <div class="bg-white rounded-2xl shadow-sm border border-cream-200 p-6">
+  <div class="bg-white rounded-2xl shadow-sm border border-cream-200 p-4 sm:p-6">
     <% if (error) { %>
       <div class="flex items-center gap-2 bg-red-50 text-red-600 text-sm rounded-xl px-4 py-3 mb-6 border border-red-100">
         <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
@@ -23,13 +23,13 @@
         <!-- Image Upload -->
         <div>
           <label class="block text-sm font-medium text-charcoal mb-1.5">Masjid Photo</label>
-          <div class="flex items-start gap-4">
+          <div class="flex flex-col sm:flex-row items-start gap-4">
             <% if (masjid && masjid.image_url) { %>
               <div class="w-24 h-24 rounded-xl overflow-hidden border border-cream-200 shrink-0">
                 <img src="<%= masjid.image_url %>" alt="Current photo" class="w-full h-full object-cover">
               </div>
             <% } %>
-            <div class="flex-1">
+            <div class="flex-1 w-full">
               <label class="block w-full cursor-pointer">
                 <div class="border-2 border-dashed border-cream-200 rounded-xl p-6 text-center hover:border-gold-400 hover:bg-gold-400/5 transition-all" id="drop-zone">
                   <svg class="w-8 h-8 text-muted mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
@@ -59,7 +59,7 @@
             placeholder="123 Main St">
         </div>
 
-        <div class="grid grid-cols-2 gap-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label class="block text-sm font-medium text-charcoal mb-1.5">City</label>
             <input type="text" name="city" value="<%= masjid ? masjid.city || 'Clemson' : 'Clemson' %>"
@@ -78,17 +78,17 @@
             class="w-full px-4 py-3 rounded-xl border border-cream-200 bg-cream-50 text-charcoal focus:outline-none focus:ring-2 focus:ring-gold-400 focus:border-transparent text-sm">
         </div>
 
-        <div class="grid grid-cols-2 gap-4">
+        <div class="grid grid-cols-2 gap-3 sm:gap-4">
           <div>
             <label class="block text-sm font-medium text-charcoal mb-1.5">Latitude</label>
             <input type="number" step="any" name="latitude" value="<%= masjid ? masjid.latitude || '' : '' %>"
-              class="w-full px-4 py-3 rounded-xl border border-cream-200 bg-cream-50 text-charcoal focus:outline-none focus:ring-2 focus:ring-gold-400 focus:border-transparent text-sm"
+              class="w-full px-3 sm:px-4 py-3 rounded-xl border border-cream-200 bg-cream-50 text-charcoal focus:outline-none focus:ring-2 focus:ring-gold-400 focus:border-transparent text-sm"
               placeholder="34.6834">
           </div>
           <div>
             <label class="block text-sm font-medium text-charcoal mb-1.5">Longitude</label>
             <input type="number" step="any" name="longitude" value="<%= masjid ? masjid.longitude || '' : '' %>"
-              class="w-full px-4 py-3 rounded-xl border border-cream-200 bg-cream-50 text-charcoal focus:outline-none focus:ring-2 focus:ring-gold-400 focus:border-transparent text-sm"
+              class="w-full px-3 sm:px-4 py-3 rounded-xl border border-cream-200 bg-cream-50 text-charcoal focus:outline-none focus:ring-2 focus:ring-gold-400 focus:border-transparent text-sm"
               placeholder="-82.8374">
           </div>
         </div>
@@ -107,7 +107,7 @@
         </div>
       </div>
 
-      <div class="flex gap-3 mt-8">
+      <div class="flex flex-col sm:flex-row gap-3 mt-8">
         <button type="submit"
           class="flex-1 bg-gradient-to-r from-gold-400 to-gold-500 text-white font-medium py-3 rounded-xl hover:from-gold-500 hover:to-gold-600 transition-all shadow-sm text-sm active:scale-[0.98]">
           Update Masjid
@@ -121,7 +121,7 @@
 <script src="/js/image-compress.js"></script>
 <script>
 function previewFile(input) {
-  const preview = document.getElementById('file-preview');
+  var preview = document.getElementById('file-preview');
   if (input.files && input.files[0]) {
     preview.textContent = 'Selected: ' + input.files[0].name;
     preview.classList.remove('hidden');

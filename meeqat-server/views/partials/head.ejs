@@ -29,7 +29,7 @@
 
 <!-- Toast notification -->
 <% if (typeof flash !== 'undefined' && flash.message) { %>
-  <div id="toast" class="fixed top-4 right-4 z-[100] animate-slide-in">
+  <div id="toast" class="fixed top-4 left-4 right-4 sm:left-auto sm:right-4 z-[100] animate-slide-in">
     <div class="flex items-center gap-3 px-5 py-3.5 rounded-xl shadow-lg border
       <%= flash.type === 'success' ? 'bg-sage-400 border-sage-500 text-white' : 'bg-red-500 border-red-600 text-white' %>">
       <% if (flash.type === 'success') { %>

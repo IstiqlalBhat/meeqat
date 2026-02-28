@@ -18,6 +18,7 @@ class CountdownRing extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return SizedBox(
       width: size,
       height: size,
@@ -36,10 +37,10 @@ class CountdownRing extends StatelessWidget {
             children: [
               Text(
                 _formattedTime,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 26,
                   fontWeight: FontWeight.w700,
-                  color: AppTheme.charcoal,
+                  color: cs.onSurface,
                 ),
               ),
               Text(
@@ -47,7 +48,7 @@ class CountdownRing extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 9,
                   fontWeight: FontWeight.w500,
-                  color: AppTheme.muted.withValues(alpha: 0.6),
+                  color: cs.hintText,
                 ),
               ),
             ],

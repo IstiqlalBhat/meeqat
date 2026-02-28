@@ -121,3 +121,31 @@ input[type="radio"] {
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
+
+/* ── Mobile & Responsive ── */
+
+/* Ensure minimum touch target sizes */
+@media (max-width: 639px) {
+  .mobile-nav-link {
+    min-height: 48px;
+  }
+
+  /* Better mobile toast positioning */
+  #toast {
+    left: 16px;
+    right: 16px;
+  }
+}
+
+/* Tablet adjustments */
+@media (min-width: 640px) and (max-width: 1023px) {
+  /* Add spacing for sidebar-less layouts */
+  .flex.gap-8 > .flex-1 {
+    max-width: 100%;
+  }
+}
+
+/* Prevent horizontal overflow on mobile */
+html, body {
+  overflow-x: hidden;
+}

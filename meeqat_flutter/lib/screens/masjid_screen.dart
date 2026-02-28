@@ -5,6 +5,8 @@ import '../models/masjid.dart';
 import '../services/prayer_provider.dart';
 import '../services/backend_service.dart';
 import '../theme/app_theme.dart';
+import '../widgets/info_banner.dart';
+import '../widgets/shimmer_loading.dart';
 
 class MasjidScreen extends StatefulWidget {
   const MasjidScreen({super.key});
@@ -87,8 +89,9 @@ class _MasjidScreenState extends State<MasjidScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return RefreshIndicator(
-      color: AppTheme.gold,
+      color: cs.goldAccent,
       onRefresh: _loadWithGps,
       child: ListView(
         padding: const EdgeInsets.only(top: 16, bottom: 120),
@@ -99,13 +102,13 @@ class _MasjidScreenState extends State<MasjidScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('Select Masjid', style: TextStyle(fontSize: 28, fontWeight: FontWeight.w700, color: AppTheme.charcoal)),
+                Text('Select Masjid', style: TextStyle(fontSize: 28, fontWeight: FontWeight.w700, color: cs.onSurface)),
                 const SizedBox(height: 4),
                 Text(
                   _usingGps
                     ? 'Showing masjids near your location'
                     : 'Choose your local masjid for accurate iqamah times',
-                  style: const TextStyle(fontSize: 14, color: AppTheme.muted),
+                  style: TextStyle(fontSize: 14, color: cs.onSurfaceVariant),
                 ),
               ],
             ),
@@ -115,25 +118,13 @@ class _MasjidScreenState extends State<MasjidScreen> {
           if (_usingGps && _userPosition != null)
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(14),
-                  color: AppTheme.duck.withValues(alpha: 0.08),
-                  border: Border.all(color: AppTheme.duck.withValues(alpha: 0.15)),
-                ),
-                child: Row(
-                  children: [
-                    Icon(Icons.my_location_rounded, size: 16, color: AppTheme.duck.withValues(alpha: 0.7)),
-                    const SizedBox(width: 8),
-                    const Expanded(
-                      child: Text('Sorted by distance from you', style: TextStyle(fontSize: 12, color: AppTheme.muted)),
-                    ),
-                    GestureDetector(
-                      onTap: _loadAllMasjids,
-                      child: const Text('Show all', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.duck)),
-                    ),
-                  ],
+              child: InfoBanner(
+                icon: Icons.my_location_rounded,
+                text: 'Sorted by distance from you',
+                color: AppTheme.duck,
+                action: GestureDetector(
+                  onTap: _loadAllMasjids,
+                  child: Text('Show all', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: cs.duckDarkAccent)),
                 ),
               ),
             ),
@@ -141,26 +132,12 @@ class _MasjidScreenState extends State<MasjidScreen> {
           if (!_usingGps && !_isLoading && _error == null)
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
-              child: GestureDetector(
+              child: InfoBanner(
+                icon: Icons.location_searching_rounded,
+                text: 'Tap to find masjids near you',
+                color: AppTheme.gold,
                 onTap: _loadWithGps,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(14),
-                    color: AppTheme.goldLight.withValues(alpha: 0.15),
-                    border: Border.all(color: AppTheme.gold.withValues(alpha: 0.15)),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(Icons.location_searching_rounded, size: 16, color: AppTheme.gold.withValues(alpha: 0.7)),
-                      const SizedBox(width: 8),
-                      const Expanded(
-                        child: Text('Tap to find masjids near you', style: TextStyle(fontSize: 12, color: AppTheme.muted)),
-                      ),
-                      const Icon(Icons.arrow_forward_ios, size: 12, color: AppTheme.gold),
-                    ],
-                  ),
-                ),
+                action: Icon(Icons.arrow_forward_ios, size: 12, color: cs.goldAccent),
               ),
             ),
 
@@ -189,18 +166,18 @@ class _MasjidScreenState extends State<MasjidScreen> {
                         width: 44, height: 44,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: AppTheme.sageDark.withValues(alpha: 0.15),
+                          color: cs.sageDarkAccent.withValues(alpha: 0.15),
                         ),
-                        child: const Icon(Icons.check_circle_rounded, color: AppTheme.sageDark, size: 22),
+                        child: Icon(Icons.check_circle_rounded, color: cs.sageDarkAccent, size: 22),
                       ),
                       const SizedBox(width: 14),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text('Current Masjid', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, letterSpacing: 1, color: AppTheme.sageDark)),
+                            Text('Current Masjid', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, letterSpacing: 1, color: cs.sageDarkAccent)),
                             const SizedBox(height: 2),
-                            Text(provider.selectedMasjidName, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: AppTheme.charcoal)),
+                            Text(provider.selectedMasjidName, style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: cs.onSurface)),
                           ],
                         ),
                       ),
@@ -213,24 +190,21 @@ class _MasjidScreenState extends State<MasjidScreen> {
 
           // Loading / Error / List
           if (_isLoading)
-            const Padding(
-              padding: EdgeInsets.only(top: 40),
-              child: Center(child: CircularProgressIndicator(color: AppTheme.gold)),
-            )
+            ...List.generate(4, (_) => const ShimmerMasjidCard())
           else if (_error != null)
             Padding(
               padding: const EdgeInsets.all(24),
               child: Column(
                 children: [
-                  Icon(Icons.cloud_off_rounded, size: 48, color: AppTheme.muted.withValues(alpha: 0.3)),
+                  Icon(Icons.cloud_off_rounded, size: 48, color: cs.hintText),
                   const SizedBox(height: 12),
-                  Text(_error!, style: const TextStyle(fontSize: 15, color: AppTheme.muted)),
+                  Text(_error!, style: TextStyle(fontSize: 15, color: cs.onSurfaceVariant)),
                   const SizedBox(height: 16),
                   TextButton.icon(
                     onPressed: _loadWithGps,
                     icon: const Icon(Icons.refresh, size: 18),
                     label: const Text('Retry'),
-                    style: TextButton.styleFrom(foregroundColor: AppTheme.gold),
+                    style: TextButton.styleFrom(foregroundColor: cs.goldAccent),
                   ),
                 ],
               ),
@@ -240,9 +214,9 @@ class _MasjidScreenState extends State<MasjidScreen> {
               padding: const EdgeInsets.all(24),
               child: Column(
                 children: [
-                  Icon(Icons.mosque_rounded, size: 48, color: AppTheme.muted.withValues(alpha: 0.3)),
+                  Icon(Icons.mosque_rounded, size: 48, color: cs.hintText),
                   const SizedBox(height: 12),
-                  const Text('No masjids available', style: TextStyle(fontSize: 15, color: AppTheme.muted)),
+                  Text('No masjids available', style: TextStyle(fontSize: 15, color: cs.onSurfaceVariant)),
                 ],
               ),
             )
@@ -254,6 +228,7 @@ class _MasjidScreenState extends State<MasjidScreen> {
   }
 
   Widget _buildMasjidCard(Masjid masjid) {
+    final cs = Theme.of(context).colorScheme;
     final provider = context.read<PrayerProvider>();
     final isSelected = provider.selectedMasjidId == masjid.id;
 
@@ -267,7 +242,7 @@ class _MasjidScreenState extends State<MasjidScreen> {
         child: Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: cs.surface,
             borderRadius: BorderRadius.circular(20),
             border: isSelected ? Border.all(color: AppTheme.sage.withValues(alpha: 0.4), width: 1.5) : null,
             boxShadow: [
@@ -291,7 +266,7 @@ class _MasjidScreenState extends State<MasjidScreen> {
                 child: Icon(
                   Icons.mosque_rounded,
                   size: 22,
-                  color: isSelected ? AppTheme.sageDark : AppTheme.gold,
+                  color: isSelected ? cs.sageDarkAccent : cs.goldAccent,
                 ),
               ),
               const SizedBox(width: 14),
@@ -299,19 +274,19 @@ class _MasjidScreenState extends State<MasjidScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(masjid.name, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: AppTheme.charcoal)),
+                    Text(masjid.name, style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: cs.onSurface)),
                     if (masjid.locationString.isNotEmpty || masjid.distanceString.isNotEmpty) ...[
                       const SizedBox(height: 3),
                       Row(
                         children: [
-                          Icon(Icons.location_on_outlined, size: 12, color: AppTheme.muted.withValues(alpha: 0.5)),
+                          Icon(Icons.location_on_outlined, size: 12, color: cs.hintText),
                           const SizedBox(width: 3),
                           Expanded(
                             child: Text(
                               masjid.distanceString.isNotEmpty
                                 ? '${masjid.distanceString} · ${masjid.locationString}'
                                 : masjid.locationString,
-                              style: TextStyle(fontSize: 12, color: AppTheme.muted.withValues(alpha: 0.7)),
+                              style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),
@@ -322,7 +297,7 @@ class _MasjidScreenState extends State<MasjidScreen> {
                 ),
               ),
               if (isSelected)
-                const Icon(Icons.check_circle, size: 22, color: AppTheme.sageDark),
+                Icon(Icons.check_circle, size: 22, color: cs.sageDarkAccent),
             ],
           ),
         ),

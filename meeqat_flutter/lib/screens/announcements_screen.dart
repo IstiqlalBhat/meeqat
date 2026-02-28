@@ -10,10 +10,12 @@ class AnnouncementsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return Consumer<PrayerProvider>(
       builder: (context, provider, _) {
         if (!provider.hasMasjid) {
           return _buildEmpty(
+            context,
             icon: Icons.mosque_rounded,
             title: 'Select a Masjid',
             subtitle: 'Choose your masjid to see announcements and updates.',
@@ -21,13 +23,14 @@ class AnnouncementsScreen extends StatelessWidget {
         }
 
         if (provider.isLoading && provider.announcements.isEmpty) {
-          return const Center(
-            child: CircularProgressIndicator(color: AppTheme.gold),
+          return Center(
+            child: CircularProgressIndicator(color: cs.goldAccent),
           );
         }
 
         if (provider.announcements.isEmpty) {
           return _buildEmpty(
+            context,
             icon: Icons.campaign_rounded,
             title: 'No Announcements',
             subtitle: 'Your masjid hasn\'t posted any announcements yet.',
@@ -35,7 +38,7 @@ class AnnouncementsScreen extends StatelessWidget {
         }
 
         return RefreshIndicator(
-          color: AppTheme.gold,
+          color: cs.goldAccent,
           onRefresh: provider.loadTimes,
           child: CustomScrollView(
             slivers: [
@@ -48,22 +51,22 @@ class AnnouncementsScreen extends StatelessWidget {
                     children: [
                       Row(
                         children: [
-                          const Icon(Icons.campaign_rounded, size: 20, color: AppTheme.gold),
+                          Icon(Icons.campaign_rounded, size: 20, color: cs.goldAccent),
                           const SizedBox(width: 8),
-                          const Text(
+                          Text(
                             'Announcements',
-                            style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: AppTheme.charcoal),
+                            style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: cs.onSurface),
                           ),
                           const Spacer(),
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                             decoration: BoxDecoration(
-                              color: AppTheme.gold.withValues(alpha: 0.12),
+                              color: cs.goldAccent.withValues(alpha: 0.12),
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: Text(
                               '${provider.announcements.length}',
-                              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppTheme.gold),
+                              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: cs.goldAccent),
                             ),
                           ),
                         ],
@@ -71,7 +74,7 @@ class AnnouncementsScreen extends StatelessWidget {
                       const SizedBox(height: 4),
                       Text(
                         provider.selectedMasjidName,
-                        style: TextStyle(fontSize: 13, color: AppTheme.muted.withValues(alpha: 0.7)),
+                        style: TextStyle(fontSize: 13, color: cs.onSurfaceVariant),
                       ),
                     ],
                   ),
@@ -116,6 +119,7 @@ class AnnouncementsScreen extends StatelessWidget {
   List<Widget> _buildFeatured(BuildContext context, List<Announcement> announcements) {
     if (!_hasFeatured(announcements)) return [];
     final featured = announcements.first;
+    final cs = Theme.of(context).colorScheme;
 
     return [
       SliverToBoxAdapter(
@@ -125,7 +129,7 @@ class AnnouncementsScreen extends StatelessWidget {
             onTap: () => _openDetail(context, featured),
             child: Container(
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: cs.surface,
                 borderRadius: BorderRadius.circular(24),
                 boxShadow: [
                   BoxShadow(
@@ -146,17 +150,17 @@ class AnnouncementsScreen extends StatelessWidget {
                       imageUrl: featured.imageUrl!,
                       fit: BoxFit.cover,
                       placeholder: (_, __) => Container(
-                        color: AppTheme.creamDark,
-                        child: const Center(
+                        color: cs.outline,
+                        child: Center(
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            color: AppTheme.gold,
+                            color: cs.goldAccent,
                           ),
                         ),
                       ),
                       errorWidget: (_, __, ___) => Container(
-                        color: AppTheme.creamDark,
-                        child: const Icon(Icons.image_not_supported_outlined, color: AppTheme.muted, size: 32),
+                        color: cs.outline,
+                        child: Icon(Icons.image_not_supported_outlined, color: cs.onSurfaceVariant, size: 32),
                       ),
                     ),
                   ),
@@ -171,25 +175,25 @@ class AnnouncementsScreen extends StatelessWidget {
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                               decoration: BoxDecoration(
-                                color: AppTheme.gold.withValues(alpha: 0.12),
+                                color: cs.goldAccent.withValues(alpha: 0.12),
                                 borderRadius: BorderRadius.circular(8),
                               ),
-                              child: const Text(
+                              child: Text(
                                 'LATEST',
-                                style: TextStyle(fontSize: 9, fontWeight: FontWeight.w800, letterSpacing: 1, color: AppTheme.gold),
+                                style: TextStyle(fontSize: 9, fontWeight: FontWeight.w800, letterSpacing: 1, color: cs.goldAccent),
                               ),
                             ),
                             const SizedBox(width: 8),
                             Text(
                               featured.formattedDate,
-                              style: TextStyle(fontSize: 11, color: AppTheme.muted.withValues(alpha: 0.6)),
+                              style: TextStyle(fontSize: 11, color: cs.hintText),
                             ),
                           ],
                         ),
                         const SizedBox(height: 10),
                         Text(
                           featured.title,
-                          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: AppTheme.charcoal, height: 1.3),
+                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: cs.onSurface, height: 1.3),
                         ),
                         if (featured.body != null && featured.body!.isNotEmpty) ...[
                           const SizedBox(height: 8),
@@ -197,7 +201,7 @@ class AnnouncementsScreen extends StatelessWidget {
                             featured.body!,
                             maxLines: 3,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(fontSize: 14, color: AppTheme.muted.withValues(alpha: 0.8), height: 1.5),
+                            style: TextStyle(fontSize: 14, color: cs.onSurfaceVariant, height: 1.5),
                           ),
                         ],
                         const SizedBox(height: 12),
@@ -205,10 +209,10 @@ class AnnouncementsScreen extends StatelessWidget {
                           children: [
                             Text(
                               'Read more',
-                              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.duckDark),
+                              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: cs.duckDarkAccent),
                             ),
                             const SizedBox(width: 4),
-                            Icon(Icons.arrow_forward_rounded, size: 14, color: AppTheme.duckDark),
+                            Icon(Icons.arrow_forward_rounded, size: 14, color: cs.duckDarkAccent),
                           ],
                         ),
                       ],
@@ -231,7 +235,8 @@ class AnnouncementsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildEmpty({required IconData icon, required String title, required String subtitle}) {
+  Widget _buildEmpty(BuildContext context, {required IconData icon, required String title, required String subtitle}) {
+    final cs = Theme.of(context).colorScheme;
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(40),
@@ -243,17 +248,17 @@ class AnnouncementsScreen extends StatelessWidget {
               height: 80,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: AppTheme.gold.withValues(alpha: 0.1),
+                color: cs.goldAccent.withValues(alpha: 0.1),
               ),
-              child: Icon(icon, size: 36, color: AppTheme.gold),
+              child: Icon(icon, size: 36, color: cs.goldAccent),
             ),
             const SizedBox(height: 20),
-            Text(title, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: AppTheme.charcoal)),
+            Text(title, style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: cs.onSurface)),
             const SizedBox(height: 8),
             Text(
               subtitle,
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 14, color: AppTheme.muted.withValues(alpha: 0.7), height: 1.5),
+              style: TextStyle(fontSize: 14, color: cs.onSurfaceVariant, height: 1.5),
             ),
           ],
         ),
@@ -270,6 +275,7 @@ class _AnnouncementTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     final hasImage = announcement.imageUrl != null && announcement.imageUrl!.isNotEmpty;
 
     return GestureDetector(
@@ -280,9 +286,9 @@ class _AnnouncementTile extends StatelessWidget {
       ),
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: cs.surface,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: AppTheme.creamDark),
+          border: Border.all(color: cs.outline),
           boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 8, offset: const Offset(0, 2))],
         ),
         clipBehavior: Clip.antiAlias,
@@ -296,10 +302,10 @@ class _AnnouncementTile extends StatelessWidget {
                 child: CachedNetworkImage(
                   imageUrl: announcement.imageUrl!,
                   fit: BoxFit.cover,
-                  placeholder: (_, __) => Container(color: AppTheme.creamDark),
+                  placeholder: (_, __) => Container(color: cs.outline),
                   errorWidget: (_, __, ___) => Container(
-                    color: AppTheme.creamDark,
-                    child: const Icon(Icons.image_not_supported_outlined, color: AppTheme.muted, size: 20),
+                    color: cs.outline,
+                    child: Icon(Icons.image_not_supported_outlined, color: cs.onSurfaceVariant, size: 20),
                   ),
                 ),
               ),
@@ -314,7 +320,7 @@ class _AnnouncementTile extends StatelessWidget {
                       announcement.title,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: AppTheme.charcoal, height: 1.3),
+                      style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: cs.onSurface, height: 1.3),
                     ),
                     if (announcement.body != null && announcement.body!.isNotEmpty) ...[
                       const SizedBox(height: 4),
@@ -322,13 +328,13 @@ class _AnnouncementTile extends StatelessWidget {
                         announcement.body!,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: TextStyle(fontSize: 12, color: AppTheme.muted.withValues(alpha: 0.7), height: 1.4),
+                        style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant, height: 1.4),
                       ),
                     ],
                     const SizedBox(height: 6),
                     Text(
                       announcement.formattedDate,
-                      style: TextStyle(fontSize: 11, color: AppTheme.muted.withValues(alpha: 0.5)),
+                      style: TextStyle(fontSize: 11, color: cs.hintText),
                     ),
                   ],
                 ),
@@ -337,7 +343,7 @@ class _AnnouncementTile extends StatelessWidget {
             // Arrow
             Padding(
               padding: const EdgeInsets.only(right: 12),
-              child: Icon(Icons.chevron_right_rounded, size: 20, color: AppTheme.muted.withValues(alpha: 0.3)),
+              child: Icon(Icons.chevron_right_rounded, size: 20, color: cs.hintText),
             ),
           ],
         ),
@@ -354,10 +360,12 @@ class _AnnouncementDetailPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final scaffoldBg = Theme.of(context).scaffoldBackgroundColor;
     final hasImage = announcement.imageUrl != null && announcement.imageUrl!.isNotEmpty;
 
     return Scaffold(
-      backgroundColor: AppTheme.cream,
+      backgroundColor: scaffoldBg,
       body: CustomScrollView(
         slivers: [
           // Collapsing image header
@@ -365,7 +373,7 @@ class _AnnouncementDetailPage extends StatelessWidget {
             SliverAppBar(
               expandedHeight: 300,
               pinned: true,
-              backgroundColor: AppTheme.cream,
+              backgroundColor: scaffoldBg,
               leading: _backButton(context),
               flexibleSpace: FlexibleSpaceBar(
                 background: GestureDetector(
@@ -373,8 +381,8 @@ class _AnnouncementDetailPage extends StatelessWidget {
                   child: CachedNetworkImage(
                     imageUrl: announcement.imageUrl!,
                     fit: BoxFit.cover,
-                    placeholder: (_, __) => Container(color: AppTheme.creamDark),
-                    errorWidget: (_, __, ___) => Container(color: AppTheme.creamDark),
+                    placeholder: (_, __) => Container(color: cs.outline),
+                    errorWidget: (_, __, ___) => Container(color: cs.outline),
                   ),
                 ),
               ),
@@ -382,7 +390,7 @@ class _AnnouncementDetailPage extends StatelessWidget {
           else
             SliverAppBar(
               pinned: true,
-              backgroundColor: AppTheme.cream,
+              backgroundColor: scaffoldBg,
               leading: _backButton(context),
               title: const Text('Announcement', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600)),
             ),
@@ -391,9 +399,9 @@ class _AnnouncementDetailPage extends StatelessWidget {
           SliverToBoxAdapter(
             child: Container(
               decoration: hasImage
-                  ? const BoxDecoration(
-                      color: AppTheme.cream,
-                      borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+                  ? BoxDecoration(
+                      color: scaffoldBg,
+                      borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
                     )
                   : null,
               transform: hasImage ? Matrix4.translationValues(0, -24, 0) : null,
@@ -408,11 +416,11 @@ class _AnnouncementDetailPage extends StatelessWidget {
                         padding: const EdgeInsets.only(bottom: 12),
                         child: Row(
                           children: [
-                            Icon(Icons.calendar_today_rounded, size: 14, color: AppTheme.muted.withValues(alpha: 0.5)),
+                            Icon(Icons.calendar_today_rounded, size: 14, color: cs.hintText),
                             const SizedBox(width: 6),
                             Text(
                               announcement.formattedDate,
-                              style: TextStyle(fontSize: 13, color: AppTheme.muted.withValues(alpha: 0.6), fontWeight: FontWeight.w500),
+                              style: TextStyle(fontSize: 13, color: cs.hintText, fontWeight: FontWeight.w500),
                             ),
                           ],
                         ),
@@ -421,26 +429,26 @@ class _AnnouncementDetailPage extends StatelessWidget {
                     // Title
                     Text(
                       announcement.title,
-                      style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w700, color: AppTheme.charcoal, height: 1.3),
+                      style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700, color: cs.onSurface, height: 1.3),
                     ),
 
                     // Divider
                     Container(
                       margin: const EdgeInsets.symmetric(vertical: 20),
                       height: 1,
-                      color: AppTheme.creamDark,
+                      color: cs.outline,
                     ),
 
                     // Body
                     if (announcement.body != null && announcement.body!.isNotEmpty)
                       Text(
                         announcement.body!,
-                        style: TextStyle(fontSize: 16, color: AppTheme.muted.withValues(alpha: 0.85), height: 1.7),
+                        style: TextStyle(fontSize: 16, color: cs.onSurfaceVariant, height: 1.7),
                       )
                     else
                       Text(
                         'No additional details.',
-                        style: TextStyle(fontSize: 15, color: AppTheme.muted.withValues(alpha: 0.5), fontStyle: FontStyle.italic),
+                        style: TextStyle(fontSize: 15, color: cs.hintText, fontStyle: FontStyle.italic),
                       ),
                   ],
                 ),
@@ -453,16 +461,17 @@ class _AnnouncementDetailPage extends StatelessWidget {
   }
 
   Widget _backButton(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return GestureDetector(
       onTap: () => Navigator.of(context).pop(),
       child: Container(
         margin: const EdgeInsets.all(8),
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.9),
+          color: cs.surface.withValues(alpha: 0.9),
           shape: BoxShape.circle,
           boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.08), blurRadius: 8)],
         ),
-        child: const Icon(Icons.arrow_back_rounded, size: 20, color: AppTheme.charcoal),
+        child: Icon(Icons.arrow_back_rounded, size: 20, color: cs.onSurface),
       ),
     );
   }

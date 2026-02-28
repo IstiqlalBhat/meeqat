@@ -9,12 +9,13 @@ class AnnouncementCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     final hasImage = announcement.imageUrl != null && announcement.imageUrl!.isNotEmpty;
     final hasBody = announcement.body != null && announcement.body!.isNotEmpty;
 
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: cs.surface,
         borderRadius: BorderRadius.circular(18),
         border: Border.all(color: AppTheme.duckLight.withValues(alpha: 0.2)),
         boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 4, offset: const Offset(0, 2))],
@@ -30,10 +31,10 @@ class AnnouncementCard extends StatelessWidget {
               child: CachedNetworkImage(
                 imageUrl: announcement.imageUrl!,
                 fit: BoxFit.cover,
-                placeholder: (_, __) => Container(color: AppTheme.creamDark),
+                placeholder: (_, __) => Container(color: cs.outline),
                 errorWidget: (_, __, ___) => Container(
-                  color: AppTheme.creamDark,
-                  child: const Icon(Icons.image_not_supported_outlined, color: AppTheme.muted),
+                  color: cs.outline,
+                  child: Icon(Icons.image_not_supported_outlined, color: cs.onSurfaceVariant),
                 ),
               ),
             ),
@@ -48,12 +49,12 @@ class AnnouncementCard extends StatelessWidget {
                     if (!hasImage)
                       Padding(
                         padding: const EdgeInsets.only(right: 8),
-                        child: Icon(Icons.notifications_active_rounded, size: 16, color: AppTheme.duckDark),
+                        child: Icon(Icons.notifications_active_rounded, size: 16, color: cs.duckDarkAccent),
                       ),
                     Expanded(
                       child: Text(
                         announcement.title,
-                        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppTheme.charcoal),
+                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: cs.onSurface),
                       ),
                     ),
                   ],
@@ -64,7 +65,7 @@ class AnnouncementCard extends StatelessWidget {
                     announcement.body!,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: TextStyle(fontSize: 13, color: AppTheme.muted.withValues(alpha: 0.8), height: 1.4),
+                    style: TextStyle(fontSize: 13, color: cs.onSurfaceVariant, height: 1.4),
                   ),
                 ],
               ],

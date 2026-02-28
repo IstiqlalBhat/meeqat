@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import '../models/prayer_time.dart';
 import '../services/prayer_provider.dart';
 import '../services/notification_service.dart';
 import '../theme/app_theme.dart';
+import '../theme/theme_provider.dart';
+import '../widgets/notification_timing_sheet.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -14,46 +15,7 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  bool _notificationsEnabled = false;
-  final Map<Prayer, bool> _prayerToggles = {};
-  bool _athanAlertsEnabled = true;
-  bool _iqamahAlertsEnabled = false;
-  int _athanMinutesBefore = 0;
-  int _iqamahMinutesBefore = 0;
-  bool _loaded = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadPrefs();
-  }
-
-  Future<void> _loadPrefs() async {
-    final prefs = await SharedPreferences.getInstance();
-
-    // Migrate old pref if present
-    if (prefs.containsKey('notify_minutes_before')) {
-      final old = prefs.getInt('notify_minutes_before') ?? 0;
-      if (!prefs.containsKey('athan_minutes_before')) {
-        await prefs.setInt('athan_minutes_before', old);
-      }
-      await prefs.remove('notify_minutes_before');
-    }
-
-    setState(() {
-      _notificationsEnabled = prefs.getBool('notifications_enabled') ?? false;
-      _athanAlertsEnabled = prefs.getBool('notify_before_athan') ?? true;
-      _iqamahAlertsEnabled = prefs.getBool('notify_before_iqamah') ?? false;
-      _athanMinutesBefore = prefs.getInt('athan_minutes_before') ?? 0;
-      _iqamahMinutesBefore = prefs.getInt('iqamah_minutes_before') ?? 0;
-      for (final p in Prayer.mainPrayers) {
-        _prayerToggles[p] = prefs.getBool('notify_${p.name}') ?? true;
-      }
-      _loaded = true;
-    });
-  }
-
-  Future<void> _setNotificationsEnabled(bool value) async {
+  Future<void> _handleNotificationsToggle(bool value, PrayerProvider provider) async {
     if (value) {
       final granted = await NotificationService.requestPermission();
       if (!granted) {
@@ -70,70 +32,59 @@ class _SettingsScreenState extends State<SettingsScreen> {
         return;
       }
     }
-
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('notifications_enabled', value);
-    setState(() => _notificationsEnabled = value);
-    _reschedule();
+    await provider.setNotificationsEnabled(value);
   }
 
-  Future<void> _setPrayerToggle(Prayer prayer, bool value) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('notify_${prayer.name}', value);
-    setState(() => _prayerToggles[prayer] = value);
-    _reschedule();
+  void _openTimingSheet(Prayer prayer, PrayerProvider provider) {
+    showNotificationTimingSheet(
+      context: context,
+      displayName: prayer.displayName,
+      arabicName: prayer.arabicName,
+      accentColor: prayer.accentDark,
+      currentAdhanTiming: provider.getNotificationTiming('adhan_${prayer.name}'),
+      currentIqamahTiming: provider.getNotificationTiming('iqamah_${prayer.name}'),
+      prayerName: prayer.name,
+      onChanged: (key, minutes) {
+        provider.setNotificationTiming(key, minutes);
+      },
+    );
   }
 
-  Future<void> _setAthanAlertsEnabled(bool value) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('notify_before_athan', value);
-    setState(() => _athanAlertsEnabled = value);
-    _reschedule();
-  }
-
-  Future<void> _setIqamahAlertsEnabled(bool value) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('notify_before_iqamah', value);
-    setState(() => _iqamahAlertsEnabled = value);
-    _reschedule();
-  }
-
-  Future<void> _setAthanMinutesBefore(int value) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setInt('athan_minutes_before', value);
-    setState(() => _athanMinutesBefore = value);
-    _reschedule();
-  }
-
-  Future<void> _setIqamahMinutesBefore(int value) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setInt('iqamah_minutes_before', value);
-    setState(() => _iqamahMinutesBefore = value);
-    _reschedule();
-  }
-
-  void _reschedule() {
-    final provider = context.read<PrayerProvider>();
-    NotificationService.schedulePrayerNotifications(provider.prayerTimes);
+  void _openJumuahTimingSheet(PrayerProvider provider) {
+    final cs = Theme.of(context).colorScheme;
+    showNotificationTimingSheet(
+      context: context,
+      displayName: "Jumu'ah",
+      arabicName: '\u062C\u0645\u0639\u0629',
+      accentColor: cs.sageDarkAccent,
+      currentAdhanTiming: 0,
+      currentIqamahTiming: provider.getNotificationTiming('jumuah'),
+      prayerName: 'jumuah',
+      isJumuah: true,
+      onChanged: (key, minutes) {
+        provider.setNotificationTiming(key, minutes);
+      },
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    if (!_loaded) return const SizedBox.shrink();
+    final cs = Theme.of(context).colorScheme;
+    final themeProvider = context.watch<ThemeProvider>();
 
     return Consumer<PrayerProvider>(
       builder: (context, provider, _) {
         return ListView(
           padding: const EdgeInsets.only(top: 16, bottom: 120),
           children: [
-            const Padding(
-              padding: EdgeInsets.fromLTRB(24, 8, 24, 24),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Settings', style: TextStyle(fontSize: 28, fontWeight: FontWeight.w700, color: AppTheme.charcoal)),
-                  SizedBox(height: 4),
-                  Text('Customize your Meeqat experience', style: TextStyle(fontSize: 14, color: AppTheme.muted)),
+                  Text('Settings', style: TextStyle(fontSize: 28, fontWeight: FontWeight.w700, color: cs.onSurface)),
+                  const SizedBox(height: 4),
+                  Text('Customize your Meeqat experience', style: TextStyle(fontSize: 14, color: cs.onSurfaceVariant)),
                 ],
               ),
             ),
@@ -149,23 +100,91 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       borderRadius: BorderRadius.circular(12),
                       color: AppTheme.sage.withValues(alpha: 0.12),
                     ),
-                    child: const Icon(Icons.mosque_rounded, size: 20, color: AppTheme.sageDark),
+                    child: Icon(Icons.mosque_rounded, size: 20, color: cs.sageDarkAccent),
                   ),
                   const SizedBox(width: 14),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text('Selected Masjid', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppTheme.charcoal)),
+                        Text('Selected Masjid', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: cs.onSurface)),
                         const SizedBox(height: 2),
                         Text(
                           provider.hasMasjid ? provider.selectedMasjidName : 'None selected',
-                          style: TextStyle(fontSize: 12, color: provider.hasMasjid ? AppTheme.sageDark : AppTheme.muted),
+                          style: TextStyle(fontSize: 12, color: provider.hasMasjid ? cs.sageDarkAccent : cs.hintText),
                         ),
                       ],
                     ),
                   ),
-                  Icon(Icons.chevron_right_rounded, size: 20, color: AppTheme.muted.withValues(alpha: 0.4)),
+                  Icon(Icons.chevron_right_rounded, size: 20, color: cs.hintText),
+                ],
+              ),
+            ),
+
+            // ── Appearance ──
+            _sectionLabel('Appearance'),
+            _card(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        width: 40, height: 40,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(12),
+                          color: cs.goldAccent.withValues(alpha: 0.12),
+                        ),
+                        child: Icon(Icons.palette_rounded, size: 20, color: cs.goldAccent),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('Theme', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: cs.onSurface)),
+                            const SizedBox(height: 1),
+                            Text(
+                              _themeLabel(themeProvider.mode),
+                              style: TextStyle(fontSize: 11, color: cs.hintText),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Padding(
+                    padding: const EdgeInsets.only(left: 54),
+                    child: Wrap(
+                      spacing: 8,
+                      children: AppThemeMode.values.map((mode) {
+                        final selected = themeProvider.mode == mode;
+                        return GestureDetector(
+                          onTap: () => themeProvider.setMode(mode),
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 200),
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                            decoration: BoxDecoration(
+                              color: selected ? cs.goldAccent.withValues(alpha: 0.12) : Theme.of(context).scaffoldBackgroundColor,
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(
+                                color: selected ? cs.goldAccent.withValues(alpha: 0.5) : cs.outline,
+                              ),
+                            ),
+                            child: Text(
+                              _themeChipLabel(mode),
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                                color: selected ? cs.goldDarkAccent : cs.onSurfaceVariant,
+                              ),
+                            ),
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -178,65 +197,32 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   // Master toggle
                   _toggleRow(
                     icon: Icons.notifications_active_rounded,
-                    iconColor: AppTheme.gold,
+                    iconColor: cs.goldAccent,
                     iconBg: AppTheme.goldLight.withValues(alpha: 0.2),
                     label: 'Prayer Notifications',
-                    subtitle: _notificationsEnabled ? 'Enabled' : 'Disabled',
-                    value: _notificationsEnabled,
-                    onChanged: _setNotificationsEnabled,
+                    subtitle: provider.notificationsEnabled ? 'Enabled' : 'Disabled',
+                    value: provider.notificationsEnabled,
+                    onChanged: (val) => _handleNotificationsToggle(val, provider),
                   ),
 
-                  if (_notificationsEnabled) ...[
-                    Divider(color: AppTheme.creamDark.withValues(alpha: 0.5), height: 20),
+                  if (provider.notificationsEnabled) ...[
+                    Divider(color: cs.outline, height: 20),
 
-                    // Adhan alerts subsection
-                    _alertSubsection(
-                      icon: Icons.volume_up_rounded,
-                      iconColor: AppTheme.duckDark,
-                      iconBg: AppTheme.duckLight.withValues(alpha: 0.2),
-                      label: 'Adhan Alerts',
-                      subtitle: _athanAlertsEnabled
-                          ? (_athanMinutesBefore == 0 ? 'At adhan time' : '$_athanMinutesBefore min before adhan')
-                          : 'Disabled',
-                      enabled: _athanAlertsEnabled,
-                      onToggle: _setAthanAlertsEnabled,
-                      selectedMinutes: _athanMinutesBefore,
-                      options: [0, 5, 10, 15, 30],
-                      zeroLabel: 'At adhan',
-                      onSelectMinutes: _setAthanMinutesBefore,
-                    ),
-
-                    Divider(color: AppTheme.creamDark.withValues(alpha: 0.5), height: 20),
-
-                    // Iqamah alerts subsection
-                    _alertSubsection(
-                      icon: Icons.timer_outlined,
-                      iconColor: AppTheme.sageDark,
-                      iconBg: AppTheme.sage.withValues(alpha: 0.15),
-                      label: 'Iqamah Alerts',
-                      subtitle: _iqamahAlertsEnabled
-                          ? (_iqamahMinutesBefore == 0 ? 'At iqamah time' : '$_iqamahMinutesBefore min before iqamah')
-                          : 'Disabled',
-                      enabled: _iqamahAlertsEnabled,
-                      onToggle: _setIqamahAlertsEnabled,
-                      selectedMinutes: _iqamahMinutesBefore,
-                      options: [0, 5, 10, 15],
-                      zeroLabel: 'At iqamah',
-                      onSelectMinutes: _setIqamahMinutesBefore,
-                    ),
-
-                    Divider(color: AppTheme.creamDark.withValues(alpha: 0.5), height: 20),
-
-                    // Per-prayer toggles
+                    // Per-prayer timing rows
                     ...Prayer.mainPrayers.map((prayer) {
                       final isLast = prayer == Prayer.mainPrayers.last;
                       return Column(
                         children: [
-                          _prayerToggleRow(prayer),
-                          if (!isLast) Divider(color: AppTheme.creamDark.withValues(alpha: 0.3), height: 12, indent: 54),
+                          _notificationPrayerRow(prayer, provider),
+                          if (!isLast)
+                            Divider(color: cs.outline.withValues(alpha: 0.5), height: 12, indent: 46),
                         ],
                       );
                     }),
+
+                    // Jumuah row
+                    Divider(color: cs.outline.withValues(alpha: 0.5), height: 12, indent: 46),
+                    _notificationJumuahRow(provider),
                   ],
                 ],
               ),
@@ -248,8 +234,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
               child: Column(
                 children: [
                   _aboutRow(Icons.info_outline_rounded, 'Version', '1.0.0'),
-                  Divider(color: AppTheme.creamDark, height: 24),
-                  _aboutRow(Icons.favorite_rounded, 'Made with', 'Love', valueColor: const Color(0xFFE88B8B)),
+                  Divider(color: cs.outline, height: 24),
+                  _aboutRow(Icons.favorite_rounded, 'Made with', 'Love', valueColor: const Color(0xFFD4626E)),
                 ],
               ),
             ),
@@ -261,12 +247,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 children: [
                   Text(
                     'Meeqat',
-                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: AppTheme.gold.withValues(alpha: 0.6)),
+                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: cs.goldAccent.withValues(alpha: 0.7)),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     'Light for your daily prayers',
-                    style: TextStyle(fontSize: 12, color: AppTheme.muted.withValues(alpha: 0.4)),
+                    style: TextStyle(fontSize: 12, color: cs.hintText),
                   ),
                 ],
               ),
@@ -277,7 +263,29 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  // ── Notification toggle row ──
+  String _themeLabel(AppThemeMode mode) {
+    switch (mode) {
+      case AppThemeMode.system:
+        return 'System Default';
+      case AppThemeMode.light:
+        return 'Light';
+      case AppThemeMode.dark:
+        return 'Dark';
+    }
+  }
+
+  String _themeChipLabel(AppThemeMode mode) {
+    switch (mode) {
+      case AppThemeMode.system:
+        return 'System';
+      case AppThemeMode.light:
+        return 'Light';
+      case AppThemeMode.dark:
+        return 'Dark';
+    }
+  }
+
+  // ── Master toggle row ──
 
   Widget _toggleRow({
     required IconData icon,
@@ -288,6 +296,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     required bool value,
     required ValueChanged<bool> onChanged,
   }) {
+    final cs = Theme.of(context).colorScheme;
     return Row(
       children: [
         Container(
@@ -300,173 +309,172 @@ class _SettingsScreenState extends State<SettingsScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(label, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppTheme.charcoal)),
+              Text(label, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: cs.onSurface)),
               const SizedBox(height: 1),
-              Text(subtitle, style: TextStyle(fontSize: 11, color: AppTheme.muted.withValues(alpha: 0.6))),
+              Text(subtitle, style: TextStyle(fontSize: 11, color: cs.hintText)),
             ],
           ),
         ),
         Switch.adaptive(
           value: value,
           onChanged: onChanged,
-          activeTrackColor: AppTheme.gold.withValues(alpha: 0.35),
-          activeThumbColor: AppTheme.gold,
+          activeTrackColor: cs.goldAccent.withValues(alpha: 0.4),
+          activeThumbColor: cs.goldAccent,
         ),
       ],
     );
   }
 
-  // ── Alert subsection (adhan / iqamah) ──
+  // ── Per-prayer notification row ──
 
-  Widget _alertSubsection({
-    required IconData icon,
-    required Color iconColor,
-    required Color iconBg,
-    required String label,
-    required String subtitle,
-    required bool enabled,
-    required ValueChanged<bool> onToggle,
-    required int selectedMinutes,
-    required List<int> options,
-    required String zeroLabel,
-    required ValueChanged<int> onSelectMinutes,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _toggleRow(
-          icon: icon,
-          iconColor: iconColor,
-          iconBg: iconBg,
-          label: label,
-          subtitle: subtitle,
-          value: enabled,
-          onChanged: onToggle,
-        ),
-        if (enabled) ...[
-          const SizedBox(height: 10),
-          _buildTimingChips(
-            options: options,
-            selectedMinutes: selectedMinutes,
-            zeroLabel: zeroLabel,
-            onSelect: onSelectMinutes,
-          ),
-        ],
-      ],
-    );
-  }
+  Widget _notificationPrayerRow(Prayer prayer, PrayerProvider provider) {
+    final cs = Theme.of(context).colorScheme;
+    final adhanTiming = provider.getNotificationTiming('adhan_${prayer.name}');
+    final iqamahTiming = provider.getNotificationTiming('iqamah_${prayer.name}');
+    final isActive = adhanTiming > 0 || iqamahTiming > 0;
+    final label = _dualTimingLabel(adhanTiming, iqamahTiming);
 
-  // ── Reusable timing chips ──
-
-  Widget _buildTimingChips({
-    required List<int> options,
-    required int selectedMinutes,
-    required String zeroLabel,
-    required ValueChanged<int> onSelect,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.only(left: 54),
-      child: Wrap(
-        spacing: 8,
-        children: options.map((min) {
-          final selected = selectedMinutes == min;
-          final label = min == 0 ? zeroLabel : '${min}m before';
-          return GestureDetector(
-            onTap: () => onSelect(min),
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+    return GestureDetector(
+      onTap: () => _openTimingSheet(prayer, provider),
+      behavior: HitTestBehavior.opaque,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        child: Row(
+          children: [
+            Container(
+              width: 34, height: 34,
               decoration: BoxDecoration(
-                color: selected ? AppTheme.gold.withValues(alpha: 0.12) : AppTheme.cream,
                 borderRadius: BorderRadius.circular(10),
-                border: Border.all(
-                  color: selected ? AppTheme.gold.withValues(alpha: 0.4) : AppTheme.creamDark.withValues(alpha: 0.5),
-                ),
+                color: prayer.accentLight.withValues(alpha: isActive ? 0.2 : 0.1),
               ),
-              child: Text(
-                label,
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-                  color: selected ? AppTheme.goldDark : AppTheme.muted,
-                ),
+              child: Icon(prayer.icon, size: 16, color: prayer.accentDark.withValues(alpha: isActive ? 0.8 : 0.3)),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Row(
+                children: [
+                  Text(
+                    prayer.displayName,
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: isActive ? cs.onSurface : cs.hintText,
+                    ),
+                  ),
+                  const SizedBox(width: 5),
+                  Text(
+                    prayer.arabicName,
+                    style: TextStyle(fontSize: 12, color: isActive ? cs.hintText : cs.hintText.withValues(alpha: 0.4)),
+                  ),
+                ],
               ),
             ),
-          );
-        }).toList(),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+                color: isActive ? prayer.accentDark : cs.hintText.withValues(alpha: 0.5),
+              ),
+            ),
+            const SizedBox(width: 4),
+            Icon(Icons.chevron_right_rounded, size: 16, color: cs.hintText.withValues(alpha: 0.4)),
+          ],
+        ),
       ),
     );
   }
 
-  // ── Per-prayer toggle ──
+  // ── Jumuah notification row ──
 
-  Widget _prayerToggleRow(Prayer prayer) {
-    final enabled = _prayerToggles[prayer] ?? true;
+  Widget _notificationJumuahRow(PrayerProvider provider) {
+    final cs = Theme.of(context).colorScheme;
+    final timing = provider.getNotificationTiming('jumuah');
+    final isActive = timing > 0;
+    final label = timing == 0 ? 'Off' : '${timing}m';
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 2),
-      child: Row(
-        children: [
-          Container(
-            width: 34, height: 34,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(10),
-              color: prayer.accentLight.withValues(alpha: enabled ? 0.18 : 0.08),
+    return GestureDetector(
+      onTap: () => _openJumuahTimingSheet(provider),
+      behavior: HitTestBehavior.opaque,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        child: Row(
+          children: [
+            Container(
+              width: 34, height: 34,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(10),
+                color: cs.sageDarkAccent.withValues(alpha: isActive ? 0.12 : 0.06),
+              ),
+              child: Icon(Icons.auto_awesome_rounded, size: 16, color: cs.sageDarkAccent.withValues(alpha: isActive ? 0.8 : 0.3)),
             ),
-            child: Icon(prayer.icon, size: 16, color: prayer.accentDark.withValues(alpha: enabled ? 0.7 : 0.25)),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Row(
-              children: [
-                Text(
-                  prayer.displayName,
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: enabled ? AppTheme.charcoal : AppTheme.muted.withValues(alpha: 0.5),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Row(
+                children: [
+                  Text(
+                    "Jumu'ah",
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: isActive ? cs.onSurface : cs.hintText,
+                    ),
                   ),
-                ),
-                const SizedBox(width: 5),
-                Text(
-                  prayer.arabicName,
-                  style: TextStyle(fontSize: 12, color: AppTheme.muted.withValues(alpha: enabled ? 0.3 : 0.15)),
-                ),
-              ],
+                  const SizedBox(width: 5),
+                  Text(
+                    '\u062C\u0645\u0639\u0629',
+                    style: TextStyle(fontSize: 12, color: isActive ? cs.hintText : cs.hintText.withValues(alpha: 0.4)),
+                  ),
+                ],
+              ),
             ),
-          ),
-          Switch.adaptive(
-            value: enabled,
-            onChanged: (val) => _setPrayerToggle(prayer, val),
-            activeTrackColor: prayer.accentDark.withValues(alpha: 0.35),
-            activeThumbColor: prayer.accentDark,
-          ),
-        ],
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+                color: isActive ? cs.sageDarkAccent : cs.hintText.withValues(alpha: 0.5),
+              ),
+            ),
+            const SizedBox(width: 4),
+            Icon(Icons.chevron_right_rounded, size: 16, color: cs.hintText.withValues(alpha: 0.4)),
+          ],
+        ),
       ),
     );
+  }
+
+  String _dualTimingLabel(int adhan, int iqamah) {
+    if (adhan == 0 && iqamah == 0) return 'Off';
+    final parts = <String>[];
+    if (adhan > 0) parts.add('Adhan ${adhan}m');
+    if (iqamah > 0) parts.add('Iqamah ${iqamah}m');
+    return parts.join(', ');
   }
 
   // ── Shared helpers ──
 
   Widget _sectionLabel(String text) {
+    final cs = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.fromLTRB(24, 8, 24, 10),
       child: Text(
         text.toUpperCase(),
-        style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 1.5, color: AppTheme.muted.withValues(alpha: 0.5)),
+        style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 1.5, color: cs.hintText),
       ),
     );
   }
 
   Widget _card({required Widget child}) {
+    final cs = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: cs.surface,
           borderRadius: BorderRadius.circular(20),
-          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 6, offset: const Offset(0, 2))],
+          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 6, offset: const Offset(0, 2))],
         ),
         child: child,
       ),
@@ -474,13 +482,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Widget _aboutRow(IconData icon, String label, String value, {Color? valueColor}) {
+    final cs = Theme.of(context).colorScheme;
     return Row(
       children: [
-        Icon(icon, size: 18, color: AppTheme.muted.withValues(alpha: 0.5)),
+        Icon(icon, size: 18, color: cs.hintText),
         const SizedBox(width: 12),
-        Text(label, style: const TextStyle(fontSize: 14, color: AppTheme.muted)),
+        Text(label, style: TextStyle(fontSize: 14, color: cs.onSurfaceVariant)),
         const Spacer(),
-        Text(value, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: valueColor ?? AppTheme.charcoal)),
+        Text(value, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: valueColor ?? cs.onSurface)),
       ],
     );
   }

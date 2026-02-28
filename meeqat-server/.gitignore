@@ -6,3 +6,4 @@ db/*.db-wal
 .vercel
 firebase-service-account.json
 firebase-admin-sdk.json
+firebase-admin-sdk.json

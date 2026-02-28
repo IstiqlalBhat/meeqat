@@ -1,7 +1,7 @@
 <%- include('partials/head') %>
 <%- include('partials/header') %>
 
-<main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+<main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
   <div class="flex gap-8">
     <%- include('partials/sidebar') %>
 
@@ -11,18 +11,18 @@
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
           Dashboard
         </a>
-        <h1 class="text-2xl font-semibold text-charcoal mt-2">Jumu'ah Times</h1>
+        <h1 class="text-xl sm:text-2xl font-semibold text-charcoal mt-2">Jumu'ah Times</h1>
         <p class="text-muted text-sm mt-1"><%= masjid.name %></p>
       </div>
 
       <!-- Info box -->
       <div class="bg-sage-400/5 border border-sage-400/20 rounded-xl px-4 py-3 mb-6">
         <p class="text-xs text-sage-600">
-          These times are displayed to users on Fridays and are available via the API at <code class="bg-sage-400/10 px-1 rounded">/api/masjids/<%= masjid.id %>/jumuah</code>
+          These times are displayed to users on Fridays and are available via the API at <code class="bg-sage-400/10 px-1 rounded text-[10px] sm:text-xs break-all">/api/masjids/<%= masjid.id %>/jumuah</code>
         </p>
       </div>
 
-      <div class="bg-white rounded-2xl shadow-sm border border-cream-200 p-6">
+      <div class="bg-white rounded-2xl shadow-sm border border-cream-200 p-4 sm:p-6">
         <form method="POST" action="/admin/jumuah">
           <div class="space-y-5">
             <div>
@@ -47,7 +47,7 @@
             </div>
           </div>
 
-          <div class="flex gap-3 mt-8">
+          <div class="flex flex-col sm:flex-row gap-3 mt-8">
             <button type="submit"
               class="flex-1 bg-gradient-to-r from-gold-400 to-gold-500 text-white font-medium py-3 rounded-xl hover:from-gold-500 hover:to-gold-600 transition-all shadow-sm text-sm active:scale-[0.98]">
               Save Jumu'ah Times

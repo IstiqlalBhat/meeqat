@@ -1,26 +1,26 @@
 <%- include('partials/head') %>
 <%- include('partials/header') %>
 
-<main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+<main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
   <!-- Masjid Profile Banner -->
-  <div class="bg-white rounded-2xl shadow-sm border border-cream-200 overflow-hidden mb-8">
+  <div class="bg-white rounded-2xl shadow-sm border border-cream-200 overflow-hidden mb-6 sm:mb-8">
     <% if (masjid.image_url) { %>
-      <div class="h-40 sm:h-52 overflow-hidden">
+      <div class="h-32 sm:h-40 md:h-52 overflow-hidden">
         <img src="<%= masjid.image_url %>" alt="<%= masjid.name %>" class="w-full h-full object-cover">
       </div>
     <% } else { %>
       <div class="h-3 bg-gradient-to-r from-gold-400 via-sage-400 to-duck-400"></div>
     <% } %>
-    <div class="p-5 sm:p-6">
-      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 class="text-2xl font-semibold text-charcoal"><%= masjid.name %></h1>
-          <p class="text-muted text-sm mt-1">
+    <div class="p-4 sm:p-5 md:p-6">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
+        <div class="min-w-0">
+          <h1 class="text-xl sm:text-2xl font-semibold text-charcoal truncate"><%= masjid.name %></h1>
+          <p class="text-muted text-sm mt-1 truncate">
             <% if (masjid.address) { %><%= masjid.address %> &middot; <% } %>
             <%= masjid.city %>, <%= masjid.state %>
           </p>
         </div>
-        <a href="/admin/edit" class="inline-flex items-center gap-2 text-sm font-medium text-muted hover:text-charcoal bg-cream-100 hover:bg-cream-200 px-4 py-2.5 rounded-xl transition-colors shrink-0">
+        <a href="/admin/edit" class="inline-flex items-center justify-center gap-2 text-sm font-medium text-muted hover:text-charcoal bg-cream-100 hover:bg-cream-200 px-4 py-2.5 rounded-xl transition-colors shrink-0 w-full sm:w-auto">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
           Edit Masjid
         </a>
@@ -29,102 +29,102 @@
   </div>
 
   <!-- Stats Overview -->
-  <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-    <div class="bg-white rounded-xl border border-cream-200 p-4">
-      <div class="flex items-center gap-3">
-        <div class="w-10 h-10 bg-duck-400/10 rounded-lg flex items-center justify-center">
-          <svg class="w-5 h-5 text-duck-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+  <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
+    <div class="bg-white rounded-xl border border-cream-200 p-3 sm:p-4">
+      <div class="flex items-center gap-2 sm:gap-3">
+        <div class="w-9 h-9 sm:w-10 sm:h-10 bg-duck-400/10 rounded-lg flex items-center justify-center shrink-0">
+          <svg class="w-4 h-4 sm:w-5 sm:h-5 text-duck-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
         </div>
-        <div>
-          <p class="text-2xl font-semibold text-charcoal"><%= stats.overrideCount %></p>
-          <p class="text-xs text-muted">Overrides</p>
-        </div>
-      </div>
-    </div>
-    <div class="bg-white rounded-xl border border-cream-200 p-4">
-      <div class="flex items-center gap-3">
-        <div class="w-10 h-10 bg-sage-400/10 rounded-lg flex items-center justify-center">
-          <svg class="w-5 h-5 text-sage-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6"/></svg>
-        </div>
-        <div>
-          <p class="text-2xl font-semibold text-charcoal"><%= stats.announcementCount %></p>
-          <p class="text-xs text-muted">Announcements</p>
+        <div class="min-w-0">
+          <p class="text-lg sm:text-2xl font-semibold text-charcoal"><%= stats.overrideCount %></p>
+          <p class="text-[10px] sm:text-xs text-muted">Overrides</p>
         </div>
       </div>
     </div>
-    <div class="bg-white rounded-xl border border-cream-200 p-4">
-      <div class="flex items-center gap-3">
-        <div class="w-10 h-10 bg-gold-400/10 rounded-lg flex items-center justify-center">
-          <svg class="w-5 h-5 text-gold-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+    <div class="bg-white rounded-xl border border-cream-200 p-3 sm:p-4">
+      <div class="flex items-center gap-2 sm:gap-3">
+        <div class="w-9 h-9 sm:w-10 sm:h-10 bg-sage-400/10 rounded-lg flex items-center justify-center shrink-0">
+          <svg class="w-4 h-4 sm:w-5 sm:h-5 text-sage-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6"/></svg>
         </div>
-        <div>
-          <p class="text-2xl font-semibold text-charcoal"><%= stats.hasJumuah ? 'Set' : 'Not Set' %></p>
-          <p class="text-xs text-muted">Jumu'ah</p>
+        <div class="min-w-0">
+          <p class="text-lg sm:text-2xl font-semibold text-charcoal"><%= stats.announcementCount %></p>
+          <p class="text-[10px] sm:text-xs text-muted">Announcements</p>
         </div>
       </div>
     </div>
-    <div class="bg-white rounded-xl border border-cream-200 p-4">
-      <div class="flex items-center gap-3">
-        <div class="w-10 h-10 bg-gold-400/10 rounded-lg flex items-center justify-center">
-          <svg class="w-5 h-5 text-gold-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+    <div class="bg-white rounded-xl border border-cream-200 p-3 sm:p-4">
+      <div class="flex items-center gap-2 sm:gap-3">
+        <div class="w-9 h-9 sm:w-10 sm:h-10 bg-gold-400/10 rounded-lg flex items-center justify-center shrink-0">
+          <svg class="w-4 h-4 sm:w-5 sm:h-5 text-gold-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
         </div>
-        <div>
-          <p class="text-2xl font-semibold text-charcoal"><%= stats.imageCount %></p>
-          <p class="text-xs text-muted">Images</p>
+        <div class="min-w-0">
+          <p class="text-lg sm:text-2xl font-semibold text-charcoal"><%= stats.hasJumuah ? 'Set' : 'Not Set' %></p>
+          <p class="text-[10px] sm:text-xs text-muted">Jumu'ah</p>
+        </div>
+      </div>
+    </div>
+    <div class="bg-white rounded-xl border border-cream-200 p-3 sm:p-4">
+      <div class="flex items-center gap-2 sm:gap-3">
+        <div class="w-9 h-9 sm:w-10 sm:h-10 bg-gold-400/10 rounded-lg flex items-center justify-center shrink-0">
+          <svg class="w-4 h-4 sm:w-5 sm:h-5 text-gold-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+        </div>
+        <div class="min-w-0">
+          <p class="text-lg sm:text-2xl font-semibold text-charcoal"><%= stats.imageCount %></p>
+          <p class="text-[10px] sm:text-xs text-muted">Images</p>
         </div>
       </div>
     </div>
   </div>
 
   <!-- Quick Actions -->
-  <h2 class="text-lg font-semibold text-charcoal mb-4">Quick Actions</h2>
-  <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-    <a href="/admin/timings" class="bg-white rounded-2xl shadow-sm border border-cream-200 p-5 hover:shadow-md transition-all group text-center">
-      <div class="w-12 h-12 bg-gold-400/10 rounded-xl flex items-center justify-center mx-auto mb-3 group-hover:bg-gold-400/20 transition-colors">
-        <svg class="w-6 h-6 text-gold-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+  <h2 class="text-base sm:text-lg font-semibold text-charcoal mb-3 sm:mb-4">Quick Actions</h2>
+  <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
+    <a href="/admin/timings" class="bg-white rounded-2xl shadow-sm border border-cream-200 p-4 sm:p-5 hover:shadow-md transition-all group text-center">
+      <div class="w-10 h-10 sm:w-12 sm:h-12 bg-gold-400/10 rounded-xl flex items-center justify-center mx-auto mb-2 sm:mb-3 group-hover:bg-gold-400/20 transition-colors">
+        <svg class="w-5 h-5 sm:w-6 sm:h-6 text-gold-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
       </div>
-      <p class="text-sm font-medium text-charcoal">Prayer Times</p>
-      <p class="text-xs text-muted mt-1">Manage overrides</p>
+      <p class="text-xs sm:text-sm font-medium text-charcoal">Prayer Times</p>
+      <p class="text-[10px] sm:text-xs text-muted mt-0.5 sm:mt-1">Manage overrides</p>
     </a>
-    <a href="/admin/jumuah" class="bg-white rounded-2xl shadow-sm border border-cream-200 p-5 hover:shadow-md transition-all group text-center">
-      <div class="w-12 h-12 bg-sage-400/10 rounded-xl flex items-center justify-center mx-auto mb-3 group-hover:bg-sage-400/20 transition-colors">
-        <svg class="w-6 h-6 text-sage-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+    <a href="/admin/jumuah" class="bg-white rounded-2xl shadow-sm border border-cream-200 p-4 sm:p-5 hover:shadow-md transition-all group text-center">
+      <div class="w-10 h-10 sm:w-12 sm:h-12 bg-sage-400/10 rounded-xl flex items-center justify-center mx-auto mb-2 sm:mb-3 group-hover:bg-sage-400/20 transition-colors">
+        <svg class="w-5 h-5 sm:w-6 sm:h-6 text-sage-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
       </div>
-      <p class="text-sm font-medium text-charcoal">Jumu'ah</p>
-      <p class="text-xs text-muted mt-1">Friday prayers</p>
+      <p class="text-xs sm:text-sm font-medium text-charcoal">Jumu'ah</p>
+      <p class="text-[10px] sm:text-xs text-muted mt-0.5 sm:mt-1">Friday prayers</p>
     </a>
-    <a href="/admin/announcements" class="bg-white rounded-2xl shadow-sm border border-cream-200 p-5 hover:shadow-md transition-all group text-center">
-      <div class="w-12 h-12 bg-duck-400/10 rounded-xl flex items-center justify-center mx-auto mb-3 group-hover:bg-duck-400/20 transition-colors">
-        <svg class="w-6 h-6 text-duck-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6"/></svg>
+    <a href="/admin/announcements" class="bg-white rounded-2xl shadow-sm border border-cream-200 p-4 sm:p-5 hover:shadow-md transition-all group text-center">
+      <div class="w-10 h-10 sm:w-12 sm:h-12 bg-duck-400/10 rounded-xl flex items-center justify-center mx-auto mb-2 sm:mb-3 group-hover:bg-duck-400/20 transition-colors">
+        <svg class="w-5 h-5 sm:w-6 sm:h-6 text-duck-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6"/></svg>
       </div>
-      <p class="text-sm font-medium text-charcoal">Announcements</p>
-      <p class="text-xs text-muted mt-1">Post updates</p>
+      <p class="text-xs sm:text-sm font-medium text-charcoal">Announcements</p>
+      <p class="text-[10px] sm:text-xs text-muted mt-0.5 sm:mt-1">Post updates</p>
     </a>
-    <a href="/admin/edit" class="bg-white rounded-2xl shadow-sm border border-cream-200 p-5 hover:shadow-md transition-all group text-center">
-      <div class="w-12 h-12 bg-cream-200/50 rounded-xl flex items-center justify-center mx-auto mb-3 group-hover:bg-cream-200 transition-colors">
-        <svg class="w-6 h-6 text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+    <a href="/admin/edit" class="bg-white rounded-2xl shadow-sm border border-cream-200 p-4 sm:p-5 hover:shadow-md transition-all group text-center">
+      <div class="w-10 h-10 sm:w-12 sm:h-12 bg-cream-200/50 rounded-xl flex items-center justify-center mx-auto mb-2 sm:mb-3 group-hover:bg-cream-200 transition-colors">
+        <svg class="w-5 h-5 sm:w-6 sm:h-6 text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
       </div>
-      <p class="text-sm font-medium text-charcoal">Edit Masjid</p>
-      <p class="text-xs text-muted mt-1">Update details</p>
+      <p class="text-xs sm:text-sm font-medium text-charcoal">Edit Masjid</p>
+      <p class="text-[10px] sm:text-xs text-muted mt-0.5 sm:mt-1">Update details</p>
     </a>
   </div>
 
   <!-- Recent Announcements -->
   <% if (recentAnnouncements.length > 0) { %>
-    <div class="flex items-center justify-between mb-4">
-      <h2 class="text-lg font-semibold text-charcoal">Recent Announcements</h2>
+    <div class="flex items-center justify-between mb-3 sm:mb-4">
+      <h2 class="text-base sm:text-lg font-semibold text-charcoal">Recent Announcements</h2>
       <a href="/admin/announcements" class="text-sm text-duck-500 hover:text-duck-400 font-medium transition-colors">View all</a>
     </div>
-    <div class="space-y-3 mb-8">
+    <div class="space-y-3 mb-6 sm:mb-8">
       <% recentAnnouncements.forEach(function(ann) { %>
-        <div class="bg-white rounded-xl shadow-sm border border-cream-200 p-4 flex items-center gap-4 <%= !ann.active ? 'opacity-60' : '' %>">
+        <div class="bg-white rounded-xl shadow-sm border border-cream-200 p-3 sm:p-4 flex items-center gap-3 sm:gap-4 <%= !ann.active ? 'opacity-60' : '' %>">
           <% if (ann.image_url) { %>
-            <div class="w-12 h-12 rounded-lg overflow-hidden shrink-0 hidden sm:block">
+            <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-lg overflow-hidden shrink-0">
               <img src="<%= ann.image_url %>" alt="" class="w-full h-full object-cover">
             </div>
           <% } %>
           <div class="flex-1 min-w-0">
-            <div class="flex items-center gap-2">
+            <div class="flex items-center gap-2 flex-wrap">
               <p class="text-sm font-medium text-charcoal truncate"><%= ann.title %></p>
               <span class="text-[10px] px-2 py-0.5 rounded-full font-medium shrink-0
                 <%= ann.active ? 'bg-sage-400/10 text-sage-500' : 'bg-cream-200 text-muted' %>">
@@ -139,13 +139,13 @@
   <% } %>
 
   <!-- API Info Bar -->
-  <div class="bg-white rounded-2xl border border-cream-200 p-5">
+  <div class="bg-white rounded-2xl border border-cream-200 p-4 sm:p-5">
     <h3 class="text-sm font-semibold text-charcoal mb-2">Flutter API Endpoints</h3>
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs font-mono">
-      <div class="bg-cream-50 px-3 py-2 rounded-lg text-muted">GET /api/masjids</div>
-      <div class="bg-cream-50 px-3 py-2 rounded-lg text-muted">GET /api/masjids/<%= masjid.id %>/times?date=YYYY-MM-DD</div>
-      <div class="bg-cream-50 px-3 py-2 rounded-lg text-muted">GET /api/masjids/<%= masjid.id %>/jumuah</div>
-      <div class="bg-cream-50 px-3 py-2 rounded-lg text-muted">GET /api/masjids/<%= masjid.id %>/announcements</div>
+      <div class="bg-cream-50 px-3 py-2 rounded-lg text-muted break-all">GET /api/masjids</div>
+      <div class="bg-cream-50 px-3 py-2 rounded-lg text-muted break-all">GET /api/masjids/<%= masjid.id %>/times?date=YYYY-MM-DD</div>
+      <div class="bg-cream-50 px-3 py-2 rounded-lg text-muted break-all">GET /api/masjids/<%= masjid.id %>/jumuah</div>
+      <div class="bg-cream-50 px-3 py-2 rounded-lg text-muted break-all">GET /api/masjids/<%= masjid.id %>/announcements</div>
     </div>
   </div>
 </main>

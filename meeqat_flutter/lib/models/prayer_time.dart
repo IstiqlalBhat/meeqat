@@ -60,13 +60,13 @@ enum Prayer {
 
   Color get accentDark {
     switch (this) {
-      case Prayer.fajr: return const Color(0xFF6D9BA3);
-      case Prayer.sunrise: return const Color(0xFFC9956B);
-      case Prayer.dhuhr: return const Color(0xFFD4A574);
-      case Prayer.asr: return const Color(0xFFC9956B);
-      case Prayer.sunset: return const Color(0xFFC9956B);
-      case Prayer.maghrib: return const Color(0xFF9B6DA3);
-      case Prayer.isha: return const Color(0xFF6D9BA3);
+      case Prayer.fajr: return const Color(0xFF2E636E);
+      case Prayer.sunrise: return const Color(0xFF7B5B2A);
+      case Prayer.dhuhr: return const Color(0xFF7B5B2A);
+      case Prayer.asr: return const Color(0xFF7B5B2A);
+      case Prayer.sunset: return const Color(0xFF7B5B2A);
+      case Prayer.maghrib: return const Color(0xFF5C3A62);
+      case Prayer.isha: return const Color(0xFF2E636E);
     }
   }
 

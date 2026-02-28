@@ -16,18 +16,18 @@
   </div>
 </header>
 
-<main class="max-w-xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-  <div class="text-center mb-8">
-    <div class="w-16 h-16 bg-gradient-to-br from-sage-400 to-sage-500 rounded-2xl flex items-center justify-center shadow-lg mx-auto mb-5">
-      <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+<main class="max-w-xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
+  <div class="text-center mb-6 sm:mb-8">
+    <div class="w-14 h-14 sm:w-16 sm:h-16 bg-gradient-to-br from-sage-400 to-sage-500 rounded-2xl flex items-center justify-center shadow-lg mx-auto mb-4 sm:mb-5">
+      <svg class="w-7 h-7 sm:w-8 sm:h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
       </svg>
     </div>
-    <h1 class="text-2xl font-semibold text-charcoal">Welcome to Meeqat!</h1>
+    <h1 class="text-xl sm:text-2xl font-semibold text-charcoal">Welcome to Meeqat!</h1>
     <p class="text-muted text-sm mt-2 max-w-md mx-auto">Let's set up your masjid. You can always update these details later.</p>
   </div>
 
-  <div class="bg-white rounded-2xl shadow-sm border border-cream-200 p-6">
+  <div class="bg-white rounded-2xl shadow-sm border border-cream-200 p-4 sm:p-6">
     <% if (error) { %>
       <div class="flex items-center gap-2 bg-red-50 text-red-600 text-sm rounded-xl px-4 py-3 mb-6 border border-red-100">
         <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
@@ -41,7 +41,7 @@
         <div>
           <label class="block text-sm font-medium text-charcoal mb-1.5">Masjid Photo <span class="text-muted font-normal">(optional)</span></label>
           <label class="block cursor-pointer">
-            <div class="border-2 border-dashed border-cream-200 rounded-xl p-6 text-center hover:border-gold-400 hover:bg-gold-400/5 transition-all">
+            <div class="border-2 border-dashed border-cream-200 rounded-xl p-4 sm:p-6 text-center hover:border-gold-400 hover:bg-gold-400/5 transition-all">
               <svg class="w-8 h-8 text-muted mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
               <p class="text-sm text-muted">Click to upload or drag & drop</p>
               <p class="text-xs text-muted mt-1">PNG, JPG up to 4MB</p>
@@ -67,7 +67,7 @@
             placeholder="123 Main St">
         </div>
 
-        <div class="grid grid-cols-2 gap-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label class="block text-sm font-medium text-charcoal mb-1.5">City</label>
             <input type="text" name="city" value="Clemson"
@@ -86,17 +86,17 @@
             class="w-full px-4 py-3 rounded-xl border border-cream-200 bg-cream-50 text-charcoal focus:outline-none focus:ring-2 focus:ring-gold-400 focus:border-transparent text-sm">
         </div>
 
-        <div class="grid grid-cols-2 gap-4">
+        <div class="grid grid-cols-2 gap-3 sm:gap-4">
           <div>
             <label class="block text-sm font-medium text-charcoal mb-1.5">Latitude</label>
             <input type="number" step="any" name="latitude"
-              class="w-full px-4 py-3 rounded-xl border border-cream-200 bg-cream-50 text-charcoal focus:outline-none focus:ring-2 focus:ring-gold-400 focus:border-transparent text-sm"
+              class="w-full px-3 sm:px-4 py-3 rounded-xl border border-cream-200 bg-cream-50 text-charcoal focus:outline-none focus:ring-2 focus:ring-gold-400 focus:border-transparent text-sm"
               placeholder="34.6834">
           </div>
           <div>
             <label class="block text-sm font-medium text-charcoal mb-1.5">Longitude</label>
             <input type="number" step="any" name="longitude"
-              class="w-full px-4 py-3 rounded-xl border border-cream-200 bg-cream-50 text-charcoal focus:outline-none focus:ring-2 focus:ring-gold-400 focus:border-transparent text-sm"
+              class="w-full px-3 sm:px-4 py-3 rounded-xl border border-cream-200 bg-cream-50 text-charcoal focus:outline-none focus:ring-2 focus:ring-gold-400 focus:border-transparent text-sm"
               placeholder="-82.8374">
           </div>
         </div>
@@ -126,7 +126,7 @@
 <script src="/js/image-compress.js"></script>
 <script>
 function previewFile(input) {
-  const preview = document.getElementById('file-preview');
+  var preview = document.getElementById('file-preview');
   if (input.files && input.files[0]) {
     preview.textContent = 'Selected: ' + input.files[0].name;
     preview.classList.remove('hidden');

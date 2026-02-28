@@ -9,10 +9,11 @@ class JumuahBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: cs.surface,
         borderRadius: BorderRadius.circular(22),
         gradient: LinearGradient(
           colors: [AppTheme.sageLight.withValues(alpha: 0.15), AppTheme.sage.withValues(alpha: 0.05)],
@@ -26,17 +27,17 @@ class JumuahBanner extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.star_rounded, size: 20, color: AppTheme.sageDark),
+              Icon(Icons.star_rounded, size: 20, color: cs.sageDarkAccent),
               const SizedBox(width: 8),
-              const Text("Jumu'ah", style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: AppTheme.charcoal)),
+              Text("Jumu'ah", style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: cs.onSurface)),
               const Spacer(),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
                 decoration: BoxDecoration(
-                  color: AppTheme.sageDark.withValues(alpha: 0.1),
+                  color: cs.sageDarkAccent.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(20),
                 ),
-                child: const Text('Friday', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppTheme.sageDark)),
+                child: Text('Friday', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: cs.sageDarkAccent)),
               ),
             ],
           ),
@@ -44,14 +45,14 @@ class JumuahBanner extends StatelessWidget {
           Row(
             children: [
               if (jumuah.khutbahTime != null)
-                _timeCol(Icons.chat_bubble, 'Khutbah', jumuah.khutbahTime!, AppTheme.gold),
+                _timeCol(context, Icons.chat_bubble, 'Khutbah', jumuah.khutbahTime!, cs.goldAccent),
               if (jumuah.firstJamaat != null) ...[
                 const Spacer(),
-                _timeCol(Icons.groups, '1st Jamaat', jumuah.firstJamaat!, AppTheme.sageDark),
+                _timeCol(context, Icons.groups, '1st Jamaat', jumuah.firstJamaat!, cs.sageDarkAccent),
               ],
               if (jumuah.secondJamaat != null) ...[
                 const Spacer(),
-                _timeCol(Icons.groups, '2nd Jamaat', jumuah.secondJamaat!, AppTheme.duckDark),
+                _timeCol(context, Icons.groups, '2nd Jamaat', jumuah.secondJamaat!, cs.duckDarkAccent),
               ],
             ],
           ),
@@ -60,14 +61,15 @@ class JumuahBanner extends StatelessWidget {
     );
   }
 
-  Widget _timeCol(IconData icon, String label, String time, Color color) {
+  Widget _timeCol(BuildContext context, IconData icon, String label, String time, Color color) {
+    final cs = Theme.of(context).colorScheme;
     return Column(
       children: [
         Icon(icon, size: 16, color: color),
         const SizedBox(height: 5),
-        Text(label, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: AppTheme.muted)),
+        Text(label, style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: cs.onSurfaceVariant)),
         const SizedBox(height: 2),
-        Text(PrayerTime.formatTime(time), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: AppTheme.charcoal)),
+        Text(PrayerTime.formatTime(time), style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: cs.onSurface)),
       ],
     );
   }
