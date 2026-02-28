@@ -242,11 +242,11 @@ class _PrayerScreenState extends State<PrayerScreen> with SingleTickerProviderSt
           Row(
             children: [
               Text('Athan ', style: TextStyle(fontSize: 9, fontWeight: FontWeight.w600, color: cs.hintText)),
-              Text(PrayerTime.formatTime(prayer.athanTime), style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: cs.onSurface)),
+              Text(PrayerTime.formatTime(prayer.athanTime), style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: cs.onSurface, fontFeatures: const [FontFeature.tabularFigures()])),
               if (prayer.iqamahTime != null) ...[
                 Text('  ·  ', style: TextStyle(color: cs.outline)),
                 Text('Iqamah ', style: TextStyle(fontSize: 9, fontWeight: FontWeight.w600, color: cs.hintText)),
-                Text(PrayerTime.formatTime(prayer.iqamahTime), style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: cs.sageDarkAccent)),
+                Text(PrayerTime.formatTime(prayer.iqamahTime), style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: cs.sageDarkAccent, fontFeatures: const [FontFeature.tabularFigures()])),
               ],
               const Spacer(),
             ],
@@ -339,7 +339,7 @@ class _PrayerScreenState extends State<PrayerScreen> with SingleTickerProviderSt
   Widget _columnHeader() {
     final cs = Theme.of(context).colorScheme;
     return Container(
-      padding: const EdgeInsets.fromLTRB(58, 8, 8, 6),
+      padding: const EdgeInsets.fromLTRB(58, 8, 16, 6),
       decoration: BoxDecoration(
         color: Theme.of(context).scaffoldBackgroundColor.withValues(alpha: 0.5),
         border: Border(bottom: BorderSide(color: cs.outline)),
@@ -351,7 +351,7 @@ class _PrayerScreenState extends State<PrayerScreen> with SingleTickerProviderSt
           const SizedBox(width: 7),
           Container(width: 1, height: 10, color: cs.outline),
           SizedBox(
-            width: 60,
+            width: 72,
             child: Text('IQAMAH', textAlign: TextAlign.end, style: TextStyle(fontSize: 8, fontWeight: FontWeight.w700, letterSpacing: 1.5, color: cs.hintText)),
           ),
         ],
@@ -426,6 +426,7 @@ class _PrayerScreenState extends State<PrayerScreen> with SingleTickerProviderSt
                     // Athan time
                     Text(
                       PrayerTime.formatTime(pt.athanTime),
+                      maxLines: 1,
                       style: TextStyle(
                         fontSize: 13.5,
                         fontWeight: FontWeight.w700,
@@ -436,10 +437,11 @@ class _PrayerScreenState extends State<PrayerScreen> with SingleTickerProviderSt
                     Container(width: 1, height: 20, color: cs.outline, margin: const EdgeInsets.symmetric(horizontal: 7)),
                     // Iqamah time
                     SizedBox(
-                      width: 56,
+                      width: 72,
                       child: Text(
                         PrayerTime.formatTime(pt.iqamahTime),
                         textAlign: TextAlign.end,
+                        maxLines: 1,
                         style: TextStyle(
                           fontSize: 13.5,
                           fontWeight: FontWeight.w600,
@@ -559,12 +561,12 @@ class _PrayerScreenState extends State<PrayerScreen> with SingleTickerProviderSt
           Icon(Icons.wb_sunny_rounded, size: 13, color: cs.goldAccent),
           const SizedBox(width: 5),
           Text('Sunrise ', style: TextStyle(fontSize: 10, color: cs.hintText)),
-          Text(PrayerTime.formatTime(p.sunrise?.athanTime), style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: cs.onSurfaceVariant)),
+          Text(PrayerTime.formatTime(p.sunrise?.athanTime), maxLines: 1, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: cs.onSurfaceVariant, fontFeatures: const [FontFeature.tabularFigures()])),
           const Spacer(),
           Icon(Icons.wb_twilight_rounded, size: 13, color: cs.goldDarkAccent),
           const SizedBox(width: 5),
           Text('Sunset ', style: TextStyle(fontSize: 10, color: cs.hintText)),
-          Text(PrayerTime.formatTime(p.sunset?.athanTime), style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: cs.onSurfaceVariant)),
+          Text(PrayerTime.formatTime(p.sunset?.athanTime), maxLines: 1, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: cs.onSurfaceVariant, fontFeatures: const [FontFeature.tabularFigures()])),
         ],
       ),
     );

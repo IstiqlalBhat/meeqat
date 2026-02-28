@@ -53,7 +53,7 @@ class MeeqatShell extends StatefulWidget {
 }
 
 class _MeeqatShellState extends State<MeeqatShell> {
-  int _currentIndex = 2;
+  int _currentIndex = 0;
 
   void _switchToTab(int index) {
     setState(() => _currentIndex = index);
@@ -62,11 +62,11 @@ class _MeeqatShellState extends State<MeeqatShell> {
   Widget _screenForIndex(int index) {
     switch (index) {
       case 0:
-        return const QiblaScreen();
-      case 1:
-        return const AnnouncementsScreen();
-      case 2:
         return PrayerScreen(onNavigateToMasjid: () => _switchToTab(3));
+      case 1:
+        return const QiblaScreen();
+      case 2:
+        return const AnnouncementsScreen();
       case 3:
         return const MasjidScreen();
       case 4:
@@ -128,9 +128,9 @@ class _MeeqatShellState extends State<MeeqatShell> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                _navItem(0, Icons.explore, 'Qibla'),
-                _navItem(1, Icons.campaign_rounded, 'News'),
-                _navItem(2, Icons.home_rounded, 'Home'),
+                _navItem(0, Icons.home_rounded, 'Home'),
+                _navItem(1, Icons.explore, 'Qibla'),
+                _navItem(2, Icons.dashboard_rounded, 'Wall'),
                 _navItem(3, Icons.mosque_rounded, 'Masjid'),
                 _navItem(4, Icons.settings_rounded, 'Settings'),
               ],
