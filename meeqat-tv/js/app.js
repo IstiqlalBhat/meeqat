@@ -384,8 +384,10 @@ const MeeqatTV = (() => {
         month: 'long'
       });
       const parts = hijriFormatter.formatToParts(now);
-      const hijriMonth = parts.find(p => p.type === 'month')?.value?.toUpperCase() || '';
-      const hijriDay = parts.find(p => p.type === 'day')?.value || '';
+      var monthPart = parts.find(function(p) { return p.type === 'month'; });
+      var dayPart = parts.find(function(p) { return p.type === 'day'; });
+      var hijriMonth = (monthPart && monthPart.value) ? monthPart.value.toUpperCase() : '';
+      var hijriDay = (dayPart && dayPart.value) ? dayPart.value : '';
       document.getElementById('hijri-date').textContent = `${hijriDay} ${hijriMonth}`;
     } catch (e) {
       document.getElementById('hijri-date').textContent = '';

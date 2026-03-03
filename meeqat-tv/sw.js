@@ -90,9 +90,10 @@ async function cacheFirstWithNetwork(request) {
       cache.put(request, response.clone());
     }
     return response;
-  } catch {
+  } catch (e) {
     // Return offline fallback for HTML requests
-    if (request.headers.get('Accept')?.includes('text/html')) {
+    var accept = request.headers.get('Accept') || '';
+    if (accept.includes('text/html')) {
       return caches.match('/index.html');
     }
     return new Response('Offline', { status: 503 });
