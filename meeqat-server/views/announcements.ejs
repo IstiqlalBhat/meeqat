@@ -111,10 +111,10 @@
     </div>
   </div>
 </main>
-<script src="/js/image-compress.js"></script>
+<script src="/js/direct-upload.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-  setupImageCompression(document.querySelector('form[action="/admin/announcements"]'));
+  setupDirectUpload(document.querySelector('form[action="/admin/announcements"]'), 'image', 'announcements');
 });
 </script>
 </body>

@@ -265,7 +265,22 @@ class _PrayerScreenState extends State<PrayerScreen> with SingleTickerProviderSt
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('NEXT', style: TextStyle(fontSize: 8, fontWeight: FontWeight.w700, letterSpacing: 2, color: cs.hintText)),
+                    Row(
+                      children: [
+                        Text('NEXT', style: TextStyle(fontSize: 8, fontWeight: FontWeight.w700, letterSpacing: 2, color: cs.hintText)),
+                        if (p.isNextPrayerTomorrow) ...[
+                          const SizedBox(width: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                            decoration: BoxDecoration(
+                              color: accent.withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text('TOMORROW', style: TextStyle(fontSize: 7, fontWeight: FontWeight.w700, letterSpacing: 1, color: accent)),
+                          ),
+                        ],
+                      ],
+                    ),
                     Row(
                       children: [
                         Text(prayer.prayer.displayName, style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: cs.onSurface, letterSpacing: -0.3)),

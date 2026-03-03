@@ -1,0 +1,899 @@
+<%- include('partials/head') %>
+<%- include('partials/header') %>
+
+<main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+  <div class="flex gap-8">
+    <%- include('partials/sidebar') %>
+
+    <div class="flex-1 min-w-0">
+      <div class="mb-6">
+        <a href="/admin/monthly-timings" class="inline-flex items-center gap-1 text-muted text-sm hover:text-charcoal transition-colors">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+          Monthly Timings
+        </a>
+        <h1 class="text-xl sm:text-2xl font-semibold text-charcoal mt-2">Upload Spreadsheet</h1>
+        <p class="text-muted text-sm mt-1">Import prayer times from an Excel or CSV file</p>
+      </div>
+
+      <!-- Steps indicator -->
+      <div class="flex items-center gap-2 mb-6">
+        <div id="step-1-dot" class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gold-400/15 text-gold-600 text-xs font-semibold transition-all">
+          <span class="w-5 h-5 rounded-full bg-gold-400 text-white flex items-center justify-center text-[10px] font-bold">1</span>
+          Upload
+        </div>
+        <svg class="w-4 h-4 text-cream-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+        <div id="step-2-dot" class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-cream-100 text-muted text-xs font-semibold transition-all">
+          <span class="w-5 h-5 rounded-full bg-cream-200 text-muted flex items-center justify-center text-[10px] font-bold">2</span>
+          Map Columns
+        </div>
+        <svg class="w-4 h-4 text-cream-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+        <div id="step-3-dot" class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-cream-100 text-muted text-xs font-semibold transition-all">
+          <span class="w-5 h-5 rounded-full bg-cream-200 text-muted flex items-center justify-center text-[10px] font-bold">3</span>
+          Preview & Save
+        </div>
+      </div>
+
+      <!-- ═══ STEP 1: Upload ═══ -->
+      <div id="step-1" class="space-y-4">
+        <!-- Month/Year selector -->
+        <div class="bg-white rounded-2xl shadow-sm border border-cream-200 p-4">
+          <label class="block text-sm font-medium text-charcoal mb-2">Target month for import</label>
+          <div class="flex items-center gap-3">
+            <select id="upload-month" class="px-3 py-2 rounded-xl border border-cream-200 bg-cream-50 text-charcoal text-sm font-medium focus:outline-none focus:ring-2 focus:ring-gold-400">
+              <% var monthNames = ['','January','February','March','April','May','June','July','August','September','October','November','December']; %>
+              <% var curMonth = new Date().getMonth() + 1; %>
+              <% for (var m = 1; m <= 12; m++) { %>
+                <option value="<%= m %>" <%= m === curMonth ? 'selected' : '' %>><%= monthNames[m] %></option>
+              <% } %>
+            </select>
+            <select id="upload-year" class="px-3 py-2 rounded-xl border border-cream-200 bg-cream-50 text-charcoal text-sm font-medium focus:outline-none focus:ring-2 focus:ring-gold-400">
+              <% var curYear = new Date().getFullYear(); %>
+              <% for (var y = curYear - 1; y <= curYear + 2; y++) { %>
+                <option value="<%= y %>" <%= y === curYear ? 'selected' : '' %>><%= y %></option>
+              <% } %>
+            </select>
+          </div>
+        </div>
+
+        <!-- Drop zone -->
+        <div id="drop-zone" class="bg-white rounded-2xl shadow-sm border-2 border-dashed border-cream-300 hover:border-gold-400 transition-colors cursor-pointer p-10 text-center"
+             ondrop="handleDrop(event)" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" onclick="document.getElementById('file-input').click()">
+          <input type="file" id="file-input" accept=".xlsx,.xls,.csv" class="hidden" onchange="handleFileSelect(this)">
+          <div class="flex flex-col items-center gap-3">
+            <div class="w-14 h-14 rounded-2xl bg-gold-400/10 flex items-center justify-center">
+              <svg class="w-7 h-7 text-gold-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
+            </div>
+            <div>
+              <p class="text-sm font-semibold text-charcoal">Drop your spreadsheet here</p>
+              <p class="text-xs text-muted mt-1">or click to browse. Supports .xlsx, .xls, .csv</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Help -->
+        <div class="bg-duck-400/5 border border-duck-400/20 rounded-xl px-4 py-3">
+          <p class="text-xs text-duck-600">
+            <strong>Expected format:</strong> Your spreadsheet should have a column for the day/date and columns for each prayer time.
+            Athan and Iqamah can be in the same column (athan only) or separate columns. Times should be in HH:MM format (e.g., 05:30 or 5:30 AM).
+          </p>
+        </div>
+      </div>
+
+      <!-- ═══ STEP 2: Map Columns ═══ -->
+      <div id="step-2" class="hidden space-y-4">
+        <div class="bg-white rounded-2xl shadow-sm border border-cream-200 p-5">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h2 class="text-base font-semibold text-charcoal">Map Columns</h2>
+              <p class="text-xs text-muted mt-0.5">Assign each spreadsheet column to a prayer field</p>
+            </div>
+            <button onclick="goToStep(1)" class="text-xs text-muted hover:text-charcoal px-3 py-1.5 rounded-lg bg-cream-100 hover:bg-cream-200 transition-colors">
+              Change file
+            </button>
+          </div>
+
+          <!-- File info -->
+          <div id="file-info" class="bg-cream-50 rounded-xl px-4 py-3 mb-4 flex items-center gap-3">
+            <svg class="w-5 h-5 text-sage-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+            <div class="min-w-0">
+              <p id="file-name" class="text-sm font-medium text-charcoal truncate"></p>
+              <p id="file-meta" class="text-xs text-muted"></p>
+            </div>
+          </div>
+
+          <!-- Sheet selector (for multi-sheet workbooks) -->
+          <div id="sheet-selector" class="hidden mb-4">
+            <label class="block text-xs font-medium text-muted mb-1">Sheet</label>
+            <select id="sheet-select" onchange="selectSheet(this.value)" class="px-3 py-2 rounded-xl border border-cream-200 bg-cream-50 text-charcoal text-sm focus:outline-none focus:ring-2 focus:ring-gold-400"></select>
+          </div>
+
+          <!-- Header row selector -->
+          <div class="mb-4">
+            <label class="block text-xs font-medium text-muted mb-1">Header row number</label>
+            <div class="flex items-center gap-2">
+              <input type="number" id="header-row" value="1" min="1" max="20" class="w-20 px-3 py-2 rounded-xl border border-cream-200 bg-cream-50 text-charcoal text-sm focus:outline-none focus:ring-2 focus:ring-gold-400" onchange="reprocessHeaders()">
+              <span class="text-xs text-muted">Row containing column headers</span>
+            </div>
+          </div>
+
+          <!-- Column mapping grid -->
+          <div class="space-y-3" id="mapping-grid">
+            <!-- Date column -->
+            <div class="grid grid-cols-[120px_1fr] sm:grid-cols-[140px_1fr] gap-3 items-center">
+              <span class="text-sm font-semibold text-charcoal">Day / Date</span>
+              <select id="map-date" class="map-select px-3 py-2 rounded-xl border border-cream-200 bg-cream-50 text-sm focus:outline-none focus:ring-2 focus:ring-gold-400" onchange="updatePreview()"></select>
+            </div>
+            <div class="h-px bg-cream-200"></div>
+
+            <!-- Prayer columns -->
+            <% var prayerNames = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha']; %>
+            <% prayerNames.forEach(function(name) { %>
+              <div class="grid grid-cols-[120px_1fr_1fr] sm:grid-cols-[140px_1fr_1fr] gap-3 items-center">
+                <span class="text-sm font-medium text-charcoal"><%= name %></span>
+                <div>
+                  <label class="text-[10px] font-medium text-muted uppercase tracking-wider mb-0.5 block">Athan</label>
+                  <select id="map-<%= name.toLowerCase() %>-athan" class="map-select w-full px-3 py-2 rounded-xl border border-cream-200 bg-cream-50 text-sm focus:outline-none focus:ring-2 focus:ring-gold-400" onchange="updatePreview()"></select>
+                </div>
+                <div>
+                  <label class="text-[10px] font-medium text-muted uppercase tracking-wider mb-0.5 block">Iqamah</label>
+                  <select id="map-<%= name.toLowerCase() %>-iqamah" class="map-select w-full px-3 py-2 rounded-xl border border-cream-200 bg-cream-50 text-sm focus:outline-none focus:ring-2 focus:ring-gold-400" onchange="updatePreview()"></select>
+                </div>
+              </div>
+            <% }) %>
+          </div>
+
+          <div class="mt-5 flex items-center gap-3">
+            <button onclick="goToStep(3)" id="preview-btn" class="px-5 py-2.5 text-sm font-medium text-white bg-gradient-to-r from-gold-400 to-gold-500 rounded-xl hover:from-gold-500 hover:to-gold-600 transition-all shadow-sm active:scale-[0.98]">
+              Preview Import
+            </button>
+            <span class="text-xs text-muted">Review data before saving</span>
+          </div>
+        </div>
+
+        <!-- Raw data peek -->
+        <div class="bg-white rounded-2xl shadow-sm border border-cream-200 overflow-hidden">
+          <div class="px-4 py-3 border-b border-cream-200 bg-cream-50/50">
+            <h3 class="text-xs font-semibold text-muted uppercase tracking-wider">Spreadsheet Preview (first 5 rows)</h3>
+          </div>
+          <div class="overflow-x-auto">
+            <table id="raw-preview" class="w-full text-xs">
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ STEP 3: Preview & Save ═══ -->
+      <div id="step-3" class="hidden space-y-4">
+        <div class="bg-white rounded-2xl shadow-sm border border-cream-200 p-5">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h2 class="text-base font-semibold text-charcoal">Preview Import</h2>
+              <p class="text-xs text-muted mt-0.5" id="preview-summary"></p>
+            </div>
+            <button onclick="goToStep(2)" class="text-xs text-muted hover:text-charcoal px-3 py-1.5 rounded-lg bg-cream-100 hover:bg-cream-200 transition-colors">
+              Back to mapping
+            </button>
+          </div>
+
+          <!-- Validation errors -->
+          <div id="validation-errors" class="hidden mb-4 bg-red-50 border border-red-200 rounded-xl px-4 py-3">
+            <div class="flex items-start gap-2">
+              <svg class="w-4 h-4 text-red-500 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+              <div>
+                <p class="text-sm font-medium text-red-700">Some rows have issues</p>
+                <ul id="error-list" class="text-xs text-red-600 mt-1 space-y-0.5 list-disc list-inside"></ul>
+              </div>
+            </div>
+          </div>
+
+          <!-- Warnings -->
+          <div id="validation-warnings" class="hidden mb-4 bg-gold-300/15 border border-gold-400/30 rounded-xl px-4 py-3">
+            <div class="flex items-start gap-2">
+              <svg class="w-4 h-4 text-gold-600 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/></svg>
+              <div>
+                <p class="text-sm font-medium text-gold-700">Warnings</p>
+                <ul id="warning-list" class="text-xs text-gold-600 mt-1 space-y-0.5 list-disc list-inside"></ul>
+              </div>
+            </div>
+          </div>
+
+          <!-- Preview table -->
+          <div class="overflow-x-auto rounded-xl border border-cream-200">
+            <table class="w-full text-xs" id="import-preview">
+              <thead>
+                <tr class="bg-cream-50 border-b border-cream-200">
+                  <th class="text-left px-3 py-2.5 font-semibold text-muted uppercase tracking-wider">Day</th>
+                  <th class="text-center px-2 py-2.5 font-semibold text-muted uppercase tracking-wider" colspan="2">Fajr</th>
+                  <th class="text-center px-2 py-2.5 font-semibold text-muted uppercase tracking-wider" colspan="2">Dhuhr</th>
+                  <th class="text-center px-2 py-2.5 font-semibold text-muted uppercase tracking-wider" colspan="2">Asr</th>
+                  <th class="text-center px-2 py-2.5 font-semibold text-muted uppercase tracking-wider" colspan="2">Maghrib</th>
+                  <th class="text-center px-2 py-2.5 font-semibold text-muted uppercase tracking-wider" colspan="2">Isha</th>
+                  <th class="text-center px-2 py-2.5 font-semibold text-muted uppercase tracking-wider w-12">Status</th>
+                </tr>
+                <tr class="bg-cream-50/80 border-b border-cream-200">
+                  <th></th>
+                  <th class="text-center px-1 py-1 text-[10px] font-medium text-muted uppercase">Ath</th>
+                  <th class="text-center px-1 py-1 text-[10px] font-medium text-muted uppercase">Iqm</th>
+                  <th class="text-center px-1 py-1 text-[10px] font-medium text-muted uppercase">Ath</th>
+                  <th class="text-center px-1 py-1 text-[10px] font-medium text-muted uppercase">Iqm</th>
+                  <th class="text-center px-1 py-1 text-[10px] font-medium text-muted uppercase">Ath</th>
+                  <th class="text-center px-1 py-1 text-[10px] font-medium text-muted uppercase">Iqm</th>
+                  <th class="text-center px-1 py-1 text-[10px] font-medium text-muted uppercase">Ath</th>
+                  <th class="text-center px-1 py-1 text-[10px] font-medium text-muted uppercase">Iqm</th>
+                  <th class="text-center px-1 py-1 text-[10px] font-medium text-muted uppercase">Ath</th>
+                  <th class="text-center px-1 py-1 text-[10px] font-medium text-muted uppercase">Iqm</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="import-preview-body">
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Save bar -->
+        <div class="flex items-center gap-3">
+          <button onclick="saveImport()" id="save-import-btn" class="px-6 py-2.5 text-sm font-medium text-white bg-gradient-to-r from-gold-400 to-gold-500 rounded-xl hover:from-gold-500 hover:to-gold-600 transition-all shadow-sm active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed">
+            Save All Times
+          </button>
+          <span id="save-status" class="text-xs text-muted"></span>
+        </div>
+
+        <!-- Save results -->
+        <div id="save-results" class="hidden">
+          <div id="save-results-content" class="bg-white rounded-2xl shadow-sm border border-cream-200 p-5">
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</main>
+
+<!-- SheetJS library for Excel/CSV parsing -->
+<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+
+<script>
+// ── State ──
+var workbook = null;
+var sheetData = []; // array of arrays (raw rows)
+var headers = [];   // column headers from header row
+var mappedData = []; // processed import data
+var currentStep = 1;
+
+var PRAYERS = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'];
+
+// ── File handling ──
+
+function handleDragOver(e) {
+  e.preventDefault();
+  e.currentTarget.classList.add('border-gold-400', 'bg-gold-400/5');
+}
+
+function handleDragLeave(e) {
+  e.currentTarget.classList.remove('border-gold-400', 'bg-gold-400/5');
+}
+
+function handleDrop(e) {
+  e.preventDefault();
+  e.currentTarget.classList.remove('border-gold-400', 'bg-gold-400/5');
+  var files = e.dataTransfer.files;
+  if (files.length > 0) processFile(files[0]);
+}
+
+function handleFileSelect(input) {
+  if (input.files.length > 0) processFile(input.files[0]);
+}
+
+function processFile(file) {
+  var validTypes = [
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    'application/vnd.ms-excel',
+    'text/csv',
+    'application/csv'
+  ];
+  var ext = file.name.split('.').pop().toLowerCase();
+  if (!['xlsx', 'xls', 'csv'].includes(ext)) {
+    showToast('error', 'Unsupported file type. Please upload .xlsx, .xls, or .csv');
+    return;
+  }
+
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      var data = new Uint8Array(e.target.result);
+      workbook = XLSX.read(data, { type: 'array', cellDates: true });
+
+      document.getElementById('file-name').textContent = file.name;
+      document.getElementById('file-meta').textContent =
+        (workbook.SheetNames.length > 1 ? workbook.SheetNames.length + ' sheets' : '1 sheet') +
+        ' \u00B7 ' + formatFileSize(file.size);
+
+      // Sheet selector
+      var sheetSel = document.getElementById('sheet-select');
+      sheetSel.innerHTML = '';
+      workbook.SheetNames.forEach(function(name) {
+        var opt = document.createElement('option');
+        opt.value = name;
+        opt.textContent = name;
+        sheetSel.appendChild(opt);
+      });
+      document.getElementById('sheet-selector').classList.toggle('hidden', workbook.SheetNames.length <= 1);
+
+      selectSheet(workbook.SheetNames[0]);
+      goToStep(2);
+    } catch (err) {
+      showToast('error', 'Failed to parse file: ' + err.message);
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function selectSheet(sheetName) {
+  var sheet = workbook.Sheets[sheetName];
+  sheetData = XLSX.utils.sheet_to_json(sheet, { header: 1, raw: false, dateNF: 'yyyy-mm-dd' });
+  reprocessHeaders();
+}
+
+function reprocessHeaders() {
+  var headerIdx = parseInt(document.getElementById('header-row').value) - 1;
+  if (headerIdx < 0 || headerIdx >= sheetData.length) headerIdx = 0;
+
+  headers = (sheetData[headerIdx] || []).map(function(h, i) {
+    return String(h || 'Column ' + (i + 1)).trim();
+  });
+
+  populateMappingDropdowns();
+  renderRawPreview(headerIdx);
+  autoDetectMappings();
+  updatePreview();
+}
+
+// ── Mapping dropdowns ──
+
+function populateMappingDropdowns() {
+  var selects = document.querySelectorAll('.map-select');
+  selects.forEach(function(sel) {
+    var prev = sel.value;
+    sel.innerHTML = '<option value="">-- Skip --</option>';
+    headers.forEach(function(h, i) {
+      var opt = document.createElement('option');
+      opt.value = i;
+      opt.textContent = h;
+      sel.appendChild(opt);
+    });
+    // Restore previous value if still valid
+    if (prev !== '' && parseInt(prev) < headers.length) {
+      sel.value = prev;
+    }
+  });
+}
+
+function autoDetectMappings() {
+  var lower = headers.map(function(h) { return h.toLowerCase().replace(/[^a-z0-9]/g, ''); });
+
+  // Date column detection
+  var datePatterns = ['date', 'day', 'dayofmonth', 'dayno', 'daynumber'];
+  var dateIdx = lower.findIndex(function(h) { return datePatterns.some(function(p) { return h.includes(p); }); });
+  if (dateIdx === -1) dateIdx = 0; // fallback to first column
+  document.getElementById('map-date').value = dateIdx;
+
+  // Prayer column detection
+  PRAYERS.forEach(function(prayer) {
+    var athanSel = document.getElementById('map-' + prayer + '-athan');
+    var iqamahSel = document.getElementById('map-' + prayer + '-iqamah');
+
+    // Find athan column
+    var athanIdx = -1;
+    var iqamahIdx = -1;
+
+    lower.forEach(function(h, i) {
+      if (i === dateIdx) return;
+      var hasPrayer = h.includes(prayer) || (prayer === 'dhuhr' && (h.includes('zuhr') || h.includes('dhuhr') || h.includes('duhr')));
+      if (!hasPrayer) return;
+
+      if (h.includes('iqam') || h.includes('iqm') || h.includes('jamat') || h.includes('jamaat') || h.includes('jamah')) {
+        if (iqamahIdx === -1) iqamahIdx = i;
+      } else {
+        if (athanIdx === -1) athanIdx = i;
+      }
+    });
+
+    // If only one column found for this prayer and no iqamah-specific keyword, assign as athan
+    if (athanIdx === -1 && iqamahIdx === -1) {
+      // Try just the prayer name without athan/iqamah distinction
+      var simpleIdx = lower.findIndex(function(h, i) {
+        if (i === dateIdx) return false;
+        return h.includes(prayer) || (prayer === 'dhuhr' && (h.includes('zuhr') || h.includes('duhr')));
+      });
+      if (simpleIdx !== -1) athanIdx = simpleIdx;
+    }
+
+    if (athanIdx !== -1) athanSel.value = athanIdx;
+    if (iqamahIdx !== -1) iqamahSel.value = iqamahIdx;
+  });
+
+  updatePreview();
+}
+
+// ── Raw preview ──
+
+function renderRawPreview(headerIdx) {
+  var table = document.getElementById('raw-preview');
+  var html = '<thead><tr class="bg-cream-50 border-b border-cream-200">';
+  headers.forEach(function(h) {
+    html += '<th class="px-3 py-2 text-left font-semibold text-muted whitespace-nowrap">' + escapeHtml(h) + '</th>';
+  });
+  html += '</tr></thead><tbody>';
+
+  var startRow = headerIdx + 1;
+  var endRow = Math.min(startRow + 5, sheetData.length);
+  for (var r = startRow; r < endRow; r++) {
+    var row = sheetData[r] || [];
+    html += '<tr class="border-b border-cream-100">';
+    for (var c = 0; c < headers.length; c++) {
+      html += '<td class="px-3 py-2 text-muted whitespace-nowrap">' + escapeHtml(String(row[c] || '')) + '</td>';
+    }
+    html += '</tr>';
+  }
+  html += '</tbody>';
+  table.innerHTML = html;
+}
+
+// ── Time parsing ──
+
+function parseTime(raw) {
+  if (!raw && raw !== 0) return null;
+  var s = String(raw).trim();
+  if (!s) return null;
+
+  // Handle Excel serial date numbers (time portion)
+  if (!isNaN(s) && parseFloat(s) >= 0 && parseFloat(s) < 1) {
+    var totalMins = Math.round(parseFloat(s) * 24 * 60);
+    var hh = Math.floor(totalMins / 60) % 24;
+    var mm = totalMins % 60;
+    return pad2(hh) + ':' + pad2(mm);
+  }
+
+  // Handle decimal hours like 5.5 meaning 5:30
+  if (/^\d{1,2}\.\d+$/.test(s)) {
+    var flt = parseFloat(s);
+    if (flt >= 0 && flt < 24) {
+      var h = Math.floor(flt);
+      var m = Math.round((flt - h) * 60);
+      return pad2(h) + ':' + pad2(m);
+    }
+  }
+
+  // Strip AM/PM and convert
+  var ampm = s.match(/(am|pm|AM|PM)\s*$/);
+  var cleaned = s.replace(/(am|pm|AM|PM)\s*$/, '').trim();
+
+  // HH:MM or H:MM
+  var match = cleaned.match(/^(\d{1,2})[:\.](\d{2})$/);
+  if (match) {
+    var h = parseInt(match[1]);
+    var m = parseInt(match[2]);
+    if (ampm) {
+      var isPM = ampm[1].toLowerCase() === 'pm';
+      if (isPM && h < 12) h += 12;
+      if (!isPM && h === 12) h = 0;
+    }
+    if (h >= 0 && h < 24 && m >= 0 && m < 60) {
+      return pad2(h) + ':' + pad2(m);
+    }
+  }
+
+  // HHMM (4 digits)
+  var match4 = cleaned.match(/^(\d{2})(\d{2})$/);
+  if (match4) {
+    var h = parseInt(match4[1]);
+    var m = parseInt(match4[2]);
+    if (h >= 0 && h < 24 && m >= 0 && m < 60) {
+      return pad2(h) + ':' + pad2(m);
+    }
+  }
+
+  // HH:MM:SS
+  var matchSec = cleaned.match(/^(\d{1,2})[:\.](\d{2})[:\.](\d{2})$/);
+  if (matchSec) {
+    var h = parseInt(matchSec[1]);
+    var m = parseInt(matchSec[2]);
+    if (ampm) {
+      var isPM = ampm[1].toLowerCase() === 'pm';
+      if (isPM && h < 12) h += 12;
+      if (!isPM && h === 12) h = 0;
+    }
+    if (h >= 0 && h < 24 && m >= 0 && m < 60) {
+      return pad2(h) + ':' + pad2(m);
+    }
+  }
+
+  return null; // unparseable
+}
+
+function parseDay(raw, month, year) {
+  if (!raw && raw !== 0) return null;
+  var s = String(raw).trim();
+
+  // Simple integer = day number
+  var num = parseInt(s);
+  if (!isNaN(num) && num >= 1 && num <= 31 && /^\d{1,2}$/.test(s)) {
+    var daysInMonth = new Date(year, month, 0).getDate();
+    if (num > daysInMonth) return null;
+    return num;
+  }
+
+  // Try to parse as a date string
+  // Formats: YYYY-MM-DD, MM/DD/YYYY, DD/MM/YYYY, M-D-YYYY, etc.
+  var d = new Date(s);
+  if (!isNaN(d.getTime())) {
+    // Check if this date's month matches the target month
+    if (d.getMonth() + 1 === month && d.getFullYear() === year) {
+      return d.getDate();
+    }
+    // Also try: maybe just use the day regardless
+    return d.getDate();
+  }
+
+  // DD-Mon, Mon DD, etc.
+  var monthNames = ['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'];
+  for (var i = 0; i < monthNames.length; i++) {
+    if (s.toLowerCase().includes(monthNames[i])) {
+      var dayMatch = s.match(/(\d{1,2})/);
+      if (dayMatch) return parseInt(dayMatch[1]);
+    }
+  }
+
+  return null;
+}
+
+// ── Build mapped data ──
+
+function buildMappedData() {
+  var month = parseInt(document.getElementById('upload-month').value);
+  var year = parseInt(document.getElementById('upload-year').value);
+  var daysInMonth = new Date(year, month, 0).getDate();
+  var headerIdx = parseInt(document.getElementById('header-row').value) - 1;
+  if (headerIdx < 0) headerIdx = 0;
+
+  var dateCol = getMapValue('map-date');
+
+  var prayerCols = {};
+  PRAYERS.forEach(function(p) {
+    prayerCols[p] = {
+      athan: getMapValue('map-' + p + '-athan'),
+      iqamah: getMapValue('map-' + p + '-iqamah')
+    };
+  });
+
+  var result = [];
+  var errors = [];
+  var warnings = [];
+  var seenDays = {};
+
+  for (var r = headerIdx + 1; r < sheetData.length; r++) {
+    var row = sheetData[r] || [];
+
+    // Skip empty rows
+    if (row.length === 0 || row.every(function(c) { return !c && c !== 0; })) continue;
+
+    var rawDate = dateCol !== null ? row[dateCol] : null;
+    var day = parseDay(rawDate, month, year);
+
+    if (day === null) {
+      // Try to see if there's any time data in this row
+      var hasAnyTime = PRAYERS.some(function(p) {
+        return (prayerCols[p].athan !== null && parseTime(row[prayerCols[p].athan]) !== null) ||
+               (prayerCols[p].iqamah !== null && parseTime(row[prayerCols[p].iqamah]) !== null);
+      });
+      if (hasAnyTime) {
+        errors.push('Row ' + (r + 1) + ': Could not parse date from "' + escapeHtml(String(rawDate || '')) + '"');
+      }
+      continue;
+    }
+
+    if (day < 1 || day > daysInMonth) {
+      errors.push('Row ' + (r + 1) + ': Day ' + day + ' is out of range for this month');
+      continue;
+    }
+
+    if (seenDays[day]) {
+      warnings.push('Row ' + (r + 1) + ': Duplicate day ' + day + ' (will overwrite previous)');
+    }
+    seenDays[day] = true;
+
+    var entry = { day: day, row: r + 1, times: {}, errors: [] };
+
+    PRAYERS.forEach(function(p) {
+      var rawAthan = prayerCols[p].athan !== null ? row[prayerCols[p].athan] : null;
+      var rawIqamah = prayerCols[p].iqamah !== null ? row[prayerCols[p].iqamah] : null;
+
+      var athan = parseTime(rawAthan);
+      var iqamah = parseTime(rawIqamah);
+
+      // If raw value exists but couldn't parse, flag error
+      if (rawAthan && String(rawAthan).trim() && athan === null) {
+        entry.errors.push(capitalize(p) + ' athan: "' + String(rawAthan).trim() + '" is not a valid time');
+      }
+      if (rawIqamah && String(rawIqamah).trim() && iqamah === null) {
+        entry.errors.push(capitalize(p) + ' iqamah: "' + String(rawIqamah).trim() + '" is not a valid time');
+      }
+
+      entry.times[p] = { athan: athan, iqamah: iqamah };
+    });
+
+    if (entry.errors.length > 0) {
+      entry.errors.forEach(function(e) {
+        errors.push('Row ' + entry.row + ', Day ' + day + ': ' + e);
+      });
+    }
+
+    result.push(entry);
+  }
+
+  // Check for missing days
+  var missingDays = [];
+  for (var d = 1; d <= daysInMonth; d++) {
+    if (!seenDays[d]) missingDays.push(d);
+  }
+  if (missingDays.length > 0 && missingDays.length < daysInMonth) {
+    if (missingDays.length <= 5) {
+      warnings.push('Missing days: ' + missingDays.join(', '));
+    } else {
+      warnings.push('Missing ' + missingDays.length + ' days out of ' + daysInMonth);
+    }
+  }
+
+  // Sort by day
+  result.sort(function(a, b) { return a.day - b.day; });
+
+  return { data: result, errors: errors, warnings: warnings };
+}
+
+function updatePreview() {
+  // Light-weight check for step 3
+  if (currentStep === 3) renderImportPreview();
+}
+
+// ── Import preview rendering ──
+
+function renderImportPreview() {
+  var result = buildMappedData();
+  mappedData = result.data;
+
+  var month = parseInt(document.getElementById('upload-month').value);
+  var year = parseInt(document.getElementById('upload-year').value);
+  var monthNames = ['','January','February','March','April','May','June','July','August','September','October','November','December'];
+
+  document.getElementById('preview-summary').textContent =
+    result.data.length + ' days mapped for ' + monthNames[month] + ' ' + year;
+
+  // Errors
+  var errBox = document.getElementById('validation-errors');
+  var errList = document.getElementById('error-list');
+  if (result.errors.length > 0) {
+    errBox.classList.remove('hidden');
+    errList.innerHTML = result.errors.map(function(e) { return '<li>' + escapeHtml(e) + '</li>'; }).join('');
+  } else {
+    errBox.classList.add('hidden');
+  }
+
+  // Warnings
+  var warnBox = document.getElementById('validation-warnings');
+  var warnList = document.getElementById('warning-list');
+  if (result.warnings.length > 0) {
+    warnBox.classList.remove('hidden');
+    warnList.innerHTML = result.warnings.map(function(e) { return '<li>' + escapeHtml(e) + '</li>'; }).join('');
+  } else {
+    warnBox.classList.add('hidden');
+  }
+
+  // Table body
+  var tbody = document.getElementById('import-preview-body');
+  var dayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  var html = '';
+
+  result.data.forEach(function(entry) {
+    var dateStr = year + '-' + pad2(month) + '-' + pad2(entry.day);
+    var dow = new Date(year, month - 1, entry.day).getDay();
+    var dayLabel = dayNames[dow];
+    var hasError = entry.errors.length > 0;
+    var hasAnyTime = PRAYERS.some(function(p) { return entry.times[p].athan || entry.times[p].iqamah; });
+
+    html += '<tr class="border-b border-cream-100 ' + (hasError ? 'bg-red-50/50' : '') + '">';
+    html += '<td class="px-3 py-2 font-medium text-charcoal">' + entry.day + ' <span class="text-muted text-[10px]">' + dayLabel + '</span></td>';
+
+    PRAYERS.forEach(function(p) {
+      var t = entry.times[p];
+      html += '<td class="px-2 py-2 text-center tabular-nums ' + (t.athan ? 'text-charcoal' : 'text-cream-300') + '">' + (t.athan || '\u2014') + '</td>';
+      html += '<td class="px-2 py-2 text-center tabular-nums ' + (t.iqamah ? 'text-sage-500 font-medium' : 'text-cream-300') + '">' + (t.iqamah || '\u2014') + '</td>';
+    });
+
+    // Status
+    if (hasError) {
+      html += '<td class="px-2 py-2 text-center" title="' + escapeHtml(entry.errors.join('; ')) + '"><span class="inline-block w-2 h-2 rounded-full bg-red-400"></span></td>';
+    } else if (!hasAnyTime) {
+      html += '<td class="px-2 py-2 text-center" title="No times found"><span class="inline-block w-2 h-2 rounded-full bg-cream-300"></span></td>';
+    } else {
+      html += '<td class="px-2 py-2 text-center"><span class="inline-block w-2 h-2 rounded-full bg-sage-400"></span></td>';
+    }
+
+    html += '</tr>';
+  });
+
+  if (result.data.length === 0) {
+    html = '<tr><td colspan="12" class="px-4 py-8 text-center text-muted">No data could be mapped. Check your column mappings and header row setting.</td></tr>';
+  }
+
+  tbody.innerHTML = html;
+
+  // Enable/disable save button
+  var saveBtn = document.getElementById('save-import-btn');
+  var hasValidData = result.data.some(function(entry) {
+    return PRAYERS.some(function(p) { return entry.times[p].athan || entry.times[p].iqamah; });
+  });
+  saveBtn.disabled = !hasValidData;
+}
+
+// ── Save import ──
+
+function saveImport() {
+  var btn = document.getElementById('save-import-btn');
+  var status = document.getElementById('save-status');
+  btn.disabled = true;
+  btn.textContent = 'Saving...';
+  status.textContent = '';
+
+  var month = parseInt(document.getElementById('upload-month').value);
+  var year = parseInt(document.getElementById('upload-year').value);
+
+  // Build changes array in the format POST /admin/monthly-timings expects
+  var changes = [];
+  mappedData.forEach(function(entry) {
+    var dateStr = year + '-' + pad2(month) + '-' + pad2(entry.day);
+    PRAYERS.forEach(function(p) {
+      var t = entry.times[p];
+      if (t.athan || t.iqamah) {
+        changes.push({
+          date: dateStr,
+          prayer: p,
+          athan_time: t.athan || '',
+          iqamah_time: t.iqamah || ''
+        });
+      }
+    });
+  });
+
+  if (changes.length === 0) {
+    showToast('error', 'No valid times to save');
+    btn.disabled = false;
+    btn.textContent = 'Save All Times';
+    return;
+  }
+
+  status.textContent = 'Saving ' + changes.length + ' overrides...';
+
+  fetch('/admin/monthly-timings', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ changes: changes })
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(data) {
+    var resultsDiv = document.getElementById('save-results');
+    var content = document.getElementById('save-results-content');
+    resultsDiv.classList.remove('hidden');
+
+    if (data.ok) {
+      showToast('success', data.message);
+      status.textContent = '';
+      content.innerHTML =
+        '<div class="flex items-start gap-3">' +
+          '<div class="w-10 h-10 rounded-xl bg-sage-400/10 flex items-center justify-center shrink-0">' +
+            '<svg class="w-5 h-5 text-sage-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>' +
+          '</div>' +
+          '<div>' +
+            '<p class="text-sm font-semibold text-charcoal">' + escapeHtml(data.message) + '</p>' +
+            '<p class="text-xs text-muted mt-1">' + changes.length + ' prayer time overrides imported successfully.</p>' +
+            '<a href="/admin/monthly-timings?month=' + month + '&year=' + year + '" class="inline-flex items-center gap-1 text-sm text-duck-500 hover:text-duck-600 font-medium mt-3 transition-colors">' +
+              'View in Monthly Grid' +
+              '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>' +
+            '</a>' +
+          '</div>' +
+        '</div>';
+      btn.textContent = 'Saved!';
+    } else {
+      showToast('error', data.message || 'Save failed');
+      status.textContent = 'Failed: ' + (data.message || 'Unknown error');
+      content.innerHTML =
+        '<div class="flex items-start gap-3">' +
+          '<div class="w-10 h-10 rounded-xl bg-red-50 flex items-center justify-center shrink-0">' +
+            '<svg class="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>' +
+          '</div>' +
+          '<div>' +
+            '<p class="text-sm font-semibold text-red-700">Import failed</p>' +
+            '<p class="text-xs text-red-600 mt-1">' + escapeHtml(data.message || 'Server error') + '</p>' +
+          '</div>' +
+        '</div>';
+      btn.disabled = false;
+      btn.textContent = 'Retry Save';
+    }
+  })
+  .catch(function(err) {
+    showToast('error', 'Network error: ' + err.message);
+    status.textContent = 'Network error';
+    btn.disabled = false;
+    btn.textContent = 'Retry Save';
+  });
+}
+
+// ── Step navigation ──
+
+function goToStep(step) {
+  currentStep = step;
+  document.getElementById('step-1').classList.toggle('hidden', step !== 1);
+  document.getElementById('step-2').classList.toggle('hidden', step !== 2);
+  document.getElementById('step-3').classList.toggle('hidden', step !== 3);
+
+  // Update step dots
+  [1, 2, 3].forEach(function(s) {
+    var dot = document.getElementById('step-' + s + '-dot');
+    var circle = dot.querySelector('span');
+    if (s < step) {
+      dot.className = 'flex items-center gap-2 px-3 py-1.5 rounded-lg bg-sage-400/15 text-sage-600 text-xs font-semibold transition-all';
+      circle.className = 'w-5 h-5 rounded-full bg-sage-400 text-white flex items-center justify-center text-[10px] font-bold';
+    } else if (s === step) {
+      dot.className = 'flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gold-400/15 text-gold-600 text-xs font-semibold transition-all';
+      circle.className = 'w-5 h-5 rounded-full bg-gold-400 text-white flex items-center justify-center text-[10px] font-bold';
+    } else {
+      dot.className = 'flex items-center gap-2 px-3 py-1.5 rounded-lg bg-cream-100 text-muted text-xs font-semibold transition-all';
+      circle.className = 'w-5 h-5 rounded-full bg-cream-200 text-muted flex items-center justify-center text-[10px] font-bold';
+    }
+  });
+
+  if (step === 3) renderImportPreview();
+}
+
+// ── Helpers ──
+
+function getMapValue(id) {
+  var sel = document.getElementById(id);
+  return sel && sel.value !== '' ? parseInt(sel.value) : null;
+}
+
+function pad2(n) { return String(n).padStart(2, '0'); }
+
+function capitalize(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
+
+function escapeHtml(str) {
+  var div = document.createElement('div');
+  div.appendChild(document.createTextNode(str));
+  return div.innerHTML;
+}
+
+function formatFileSize(bytes) {
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+  return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+}
+
+function showToast(type, message) {
+  var existing = document.getElementById('toast');
+  if (existing) existing.remove();
+
+  var div = document.createElement('div');
+  div.id = 'toast';
+  div.className = 'fixed top-4 left-4 right-4 sm:left-auto sm:right-4 z-[100] animate-slide-in';
+  var bgClass = type === 'success' ? 'bg-sage-400 border-sage-500' : 'bg-red-500 border-red-600';
+  div.innerHTML = '<div class="flex items-center gap-3 px-5 py-3.5 rounded-xl shadow-lg border text-white ' + bgClass + '">' +
+    '<span class="text-sm font-medium">' + escapeHtml(message) + '</span>' +
+    '<button onclick="this.closest(\'#toast\').remove()" class="ml-2 opacity-70 hover:opacity-100">' +
+    '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>' +
+    '</button></div>';
+  document.body.appendChild(div);
+  setTimeout(function() { var t = document.getElementById('toast'); if (t) t.remove(); }, 5000);
+}
+</script>
+</body>
+</html>

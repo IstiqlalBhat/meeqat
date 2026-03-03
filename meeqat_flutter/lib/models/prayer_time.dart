@@ -114,24 +114,27 @@ class PrayerTime {
   String? athanTime;
   String? iqamahTime;
   String source;
+  final int dayOffset;
 
   PrayerTime({
     required this.prayer,
     this.athanTime,
     this.iqamahTime,
     this.source = 'api',
+    this.dayOffset = 0,
   });
 
-  DateTime? get athanDate => _parseTime(athanTime);
-  DateTime? get iqamahDate => _parseTime(iqamahTime);
+  DateTime? get athanDate => _parseTime(athanTime, dayOffset);
+  DateTime? get iqamahDate => _parseTime(iqamahTime, dayOffset);
 
-  static DateTime? _parseTime(String? timeStr) {
+  static DateTime? _parseTime(String? timeStr, [int dayOffset = 0]) {
     if (timeStr == null || timeStr.isEmpty) return null;
     try {
       final parts = timeStr.substring(0, 5).split(':');
       final now = DateTime.now();
-      return DateTime(now.year, now.month, now.day,
+      final base = DateTime(now.year, now.month, now.day,
           int.parse(parts[0]), int.parse(parts[1]));
+      return dayOffset == 0 ? base : base.add(Duration(days: dayOffset));
     } catch (_) {
       return null;
     }
@@ -149,12 +152,13 @@ class PrayerTime {
     }
   }
 
-  factory PrayerTime.fromJson(Prayer prayer, Map<String, dynamic> json) {
+  factory PrayerTime.fromJson(Prayer prayer, Map<String, dynamic> json, {int dayOffset = 0}) {
     return PrayerTime(
       prayer: prayer,
       athanTime: json['athan'] as String?,
       iqamahTime: json['iqamah'] as String?,
       source: json['source'] as String? ?? 'api',
+      dayOffset: dayOffset,
     );
   }
 }

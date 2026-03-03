@@ -112,8 +112,10 @@ router.post('/setup', upload.single('image'), async (req, res) => {
 
     if (error) throw error;
 
-    // Upload profile image if provided
-    if (req.file && newMasjid) {
+    // Save profile image URL (from direct upload) or fallback to file upload
+    if (req.body.image_url && newMasjid) {
+      await supabase.from('masjids').update({ image_url: req.body.image_url }).eq('id', newMasjid.id);
+    } else if (req.file && newMasjid) {
       const imageUrl = await uploadImage(req.file, newMasjid.id, 'profile');
       if (imageUrl) {
         await supabase.from('masjids').update({ image_url: imageUrl }).eq('id', newMasjid.id);
@@ -154,7 +156,9 @@ router.post('/edit', requireMasjid, upload.single('image'), async (req, res) => 
       updated_at: new Date().toISOString()
     };
 
-    if (req.file) {
+    if (req.body.image_url) {
+      updateData.image_url = req.body.image_url;
+    } else if (req.file) {
       updateData.image_url = await uploadImage(req.file, req.masjid.id, 'profile');
     }
 
@@ -383,6 +387,87 @@ router.post('/monthly-timings', requireMasjid, express.json(), async (req, res) 
   }
 });
 
+// ─── Direct Upload (signed URL) ──────────────────────────────
+
+router.post('/get-upload-url', requireMasjid, express.json(), async (req, res) => {
+  const { filename, contentType, category } = req.body;
+  if (!filename || !contentType) {
+    return res.status(400).json({ error: 'Missing filename or contentType' });
+  }
+
+  const masjidId = req.masjid.id;
+  const ext = path.extname(filename) || '.jpg';
+
+  let filePath;
+  if (category === 'profile') {
+    filePath = `${masjidId}/profile${ext}`;
+    // Clean up old profile images
+    try {
+      const [files] = await bucket.getFiles({ prefix: `${masjidId}/profile` });
+      for (const f of files) {
+        if (f.name.startsWith(`${masjidId}/profile`)) {
+          await f.delete().catch(() => {});
+        }
+      }
+    } catch (err) { /* ignore cleanup errors */ }
+  } else {
+    filePath = `${masjidId}/announcements/${Date.now()}${ext}`;
+  }
+
+  try {
+    const file = bucket.file(filePath);
+    const [uploadUrl] = await file.generateSignedUrl({
+      version: 'v4',
+      action: 'write',
+      expires: Date.now() + 15 * 60 * 1000, // 15 minutes
+      contentType: contentType,
+    });
+
+    res.json({ uploadUrl, filePath });
+  } catch (err) {
+    console.error('Signed URL error:', err);
+    res.status(500).json({ error: 'Failed to generate upload URL' });
+  }
+});
+
+// After the browser finishes uploading, make the file publicly accessible
+router.post('/finalize-upload', requireMasjid, express.json(), async (req, res) => {
+  const { filePath } = req.body;
+  if (!filePath) {
+    return res.status(400).json({ error: 'Missing filePath' });
+  }
+
+  // Security: ensure the file belongs to this admin's masjid
+  if (!filePath.startsWith(`${req.masjid.id}/`)) {
+    return res.status(403).json({ error: 'Unauthorized file path' });
+  }
+
+  try {
+    const file = bucket.file(filePath);
+
+    // Try makePublic first; fall back to signed URL for uniform-access buckets
+    try {
+      await file.makePublic();
+      return res.json({ url: getFirebasePublicUrl(filePath) });
+    } catch (publicErr) {
+      const [signedUrl] = await file.getSignedUrl({
+        action: 'read',
+        expires: '03-01-2030',
+      });
+      return res.json({ url: signedUrl });
+    }
+  } catch (err) {
+    console.error('Finalize upload error:', err);
+    res.status(500).json({ error: 'Failed to finalize upload' });
+  }
+});
+
+// ─── Upload Spreadsheet ──────────────────────────────────────
+
+router.get('/upload-timings', requireMasjid, (req, res) => {
+  res.render('upload-timings', { masjid: req.masjid });
+});
+
 // ─── API Settings (location & calculation method) ───────────
 
 router.get('/api-settings', requireMasjid, async (req, res) => {
@@ -453,7 +538,9 @@ router.post('/announcements', requireMasjid, upload.single('image'), async (req,
 
   if (title && title.trim()) {
     let image_url = null;
-    if (req.file) {
+    if (req.body.image_url) {
+      image_url = req.body.image_url;
+    } else if (req.file) {
       image_url = await uploadImage(req.file, req.masjid.id, 'announcements');
     }
 

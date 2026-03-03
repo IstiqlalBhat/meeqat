@@ -32,4 +32,19 @@ if (!admin.apps.length) {
 const bucket = admin.storage().bucket();
 const auth = admin.auth();
 
+// Set CORS on the bucket so browsers can PUT files directly
+(async () => {
+  try {
+    await bucket.setCorsConfiguration([{
+      origin: ['*'],
+      method: ['GET', 'PUT', 'OPTIONS'],
+      responseHeader: ['Content-Type', 'Content-Length'],
+      maxAgeSeconds: 3600
+    }]);
+  } catch (err) {
+    // Non-fatal — CORS may already be set, or permissions may be limited
+    console.warn('Could not set bucket CORS (may already be configured):', err.message);
+  }
+})();
+
 module.exports = { bucket, auth };

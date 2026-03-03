@@ -9,6 +9,7 @@ import 'notification_service.dart';
 
 class PrayerProvider extends ChangeNotifier {
   List<PrayerTime> prayerTimes = [];
+  List<PrayerTime> tomorrowPrayerTimes = [];
   JumuahTimes? jumuah;
   List<Announcement> announcements = [];
   bool isLoading = false;
@@ -61,6 +62,9 @@ class PrayerProvider extends ChangeNotifier {
   List<PrayerTime> get fivePrayers =>
       prayerTimes.where((p) => p.prayer.hasIqamah).toList();
 
+  PrayerTime? get tomorrowFajr =>
+      tomorrowPrayerTimes.where((p) => p.prayer == Prayer.fajr).firstOrNull;
+
   PrayerTime? get nextPrayer {
     if (!isViewingToday) return null;
     final now = DateTime.now();
@@ -68,7 +72,18 @@ class PrayerProvider extends ChangeNotifier {
       final date = pt.athanDate;
       if (date != null && date.isAfter(now)) return pt;
     }
-    return null;
+    // All today's prayers passed — show tomorrow's Fajr
+    return tomorrowFajr;
+  }
+
+  bool get isNextPrayerTomorrow {
+    if (!isViewingToday) return false;
+    final now = DateTime.now();
+    for (final pt in fivePrayers) {
+      final date = pt.athanDate;
+      if (date != null && date.isAfter(now)) return false;
+    }
+    return tomorrowFajr != null;
   }
 
   Duration? get timeToNextPrayer {
@@ -87,6 +102,15 @@ class PrayerProvider extends ChangeNotifier {
     final nextDate = next.athanDate;
     if (nextDate == null) return 6 * 3600;
 
+    // Tomorrow's Fajr — gap is from today's Isha to tomorrow's Fajr
+    if (isNextPrayerTomorrow) {
+      final fiveList = fivePrayers;
+      if (fiveList.isNotEmpty && fiveList.last.athanDate != null) {
+        return nextDate.difference(fiveList.last.athanDate!).inSeconds.abs();
+      }
+      return 6 * 3600;
+    }
+
     final fiveList = fivePrayers;
     final idx = fiveList.indexOf(next);
 
@@ -102,7 +126,6 @@ class PrayerProvider extends ChangeNotifier {
       final ishaDate = fiveList.last.athanDate!;
       final gap = nextDate.difference(ishaDate).inSeconds;
       if (gap < 0) {
-        // Isha was yesterday conceptually, so add 24h
         return gap + 24 * 3600;
       }
       return gap > 0 ? gap : 6 * 3600;
@@ -205,9 +228,20 @@ class PrayerProvider extends ChangeNotifier {
       prayerTimes = await service.fetchTimes(selectedMasjidId, date: dateStr);
       jumuah = await service.fetchJumuah(selectedMasjidId);
       announcements = await service.fetchAnnouncements(selectedMasjidId);
-      // Only schedule notifications when viewing today
+      // Fetch tomorrow's times so we can show Fajr countdown after Isha
       if (isViewingToday) {
+        final tomorrow = selectedDate.add(const Duration(days: 1));
+        final tomorrowStr = DateFormat('yyyy-MM-dd').format(tomorrow);
+        try {
+          tomorrowPrayerTimes = await service.fetchTimes(
+            selectedMasjidId, date: tomorrowStr, dayOffset: 1,
+          );
+        } catch (_) {
+          tomorrowPrayerTimes = [];
+        }
         NotificationService.schedulePrayerNotifications(prayerTimes, jumuah: jumuah);
+      } else {
+        tomorrowPrayerTimes = [];
       }
     } catch (e) {
       errorMessage = 'Unable to fetch prayer times';

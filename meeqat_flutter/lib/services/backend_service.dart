@@ -27,7 +27,7 @@ class BackendService {
     throw Exception('Failed to load nearby masjids');
   }
 
-  Future<List<PrayerTime>> fetchTimes(int masjidId, {String? date}) async {
+  Future<List<PrayerTime>> fetchTimes(int masjidId, {String? date, int dayOffset = 0}) async {
     var url = '$baseUrl/api/masjids/$masjidId/times';
     if (date != null) url += '?date=$date';
     final res = await http.get(Uri.parse(url));
@@ -37,9 +37,9 @@ class BackendService {
       return Prayer.values.map((p) {
         final entry = timesMap[p.name];
         if (entry != null) {
-          return PrayerTime.fromJson(p, entry as Map<String, dynamic>);
+          return PrayerTime.fromJson(p, entry as Map<String, dynamic>, dayOffset: dayOffset);
         }
-        return PrayerTime(prayer: p);
+        return PrayerTime(prayer: p, dayOffset: dayOffset);
       }).toList();
     }
     throw Exception('Failed to load times');
