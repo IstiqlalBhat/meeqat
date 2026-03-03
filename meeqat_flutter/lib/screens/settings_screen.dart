@@ -632,22 +632,27 @@ class _TvScannerScreenState extends State<_TvScannerScreen> {
     final barcode = capture.barcodes.firstOrNull;
     if (barcode == null || barcode.rawValue == null) return;
 
+    debugPrint('QR scanned: ${barcode.rawValue}');
+
     final pairInfo = _extractPairInfo(barcode.rawValue!);
     if (pairInfo == null) {
       setState(() => _errorMessage = 'Invalid QR code. Please scan the code on the TV display.');
       return;
     }
 
+    await _pairWithCode(pairInfo.code, pairInfo.backendUrl);
+  }
+
+  Future<void> _pairWithCode(String code, [String? backendUrlOverride]) async {
     setState(() {
       _isProcessing = true;
       _errorMessage = null;
     });
 
     try {
-      // Use backend URL from QR code if available, otherwise fall back to widget's URL
-      final baseUrl = pairInfo.backendUrl ?? widget.backendUrl;
+      final baseUrl = backendUrlOverride ?? widget.backendUrl;
       final service = BackendService(baseUrl: baseUrl);
-      await service.pairTvDevice(pairInfo.code, widget.masjidId);
+      await service.pairTvDevice(code, widget.masjidId);
 
       if (!mounted) return;
       setState(() {
@@ -655,7 +660,6 @@ class _TvScannerScreenState extends State<_TvScannerScreen> {
         _isProcessing = false;
       });
 
-      // Show success then pop after delay
       await Future.delayed(const Duration(seconds: 2));
       if (mounted) Navigator.of(context).pop();
     } catch (e) {
@@ -665,6 +669,42 @@ class _TvScannerScreenState extends State<_TvScannerScreen> {
         _errorMessage = e.toString().replaceFirst('Exception: ', '');
       });
     }
+  }
+
+  void _showManualCodeDialog() {
+    final controller = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Enter Pair Code'),
+        content: TextField(
+          controller: controller,
+          keyboardType: TextInputType.number,
+          maxLength: 6,
+          autofocus: true,
+          decoration: const InputDecoration(
+            hintText: '6-digit code from TV',
+            border: OutlineInputBorder(),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () {
+              final code = controller.text.trim();
+              if (RegExp(r'^\d{6}$').hasMatch(code)) {
+                Navigator.pop(ctx);
+                _pairWithCode(code);
+              }
+            },
+            child: const Text('Pair'),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -734,7 +774,16 @@ class _TvScannerScreenState extends State<_TvScannerScreen> {
                       textAlign: TextAlign.center,
                       style: TextStyle(color: Colors.white.withValues(alpha: 0.9), fontSize: 16, fontWeight: FontWeight.w500),
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 12),
+                    TextButton.icon(
+                      onPressed: _showManualCodeDialog,
+                      icon: const Icon(Icons.keyboard, size: 18),
+                      label: const Text('Enter code manually'),
+                      style: TextButton.styleFrom(
+                        foregroundColor: const Color(0xFFC9A84C),
+                      ),
+                    ),
+                    const SizedBox(height: 4),
                     Text(
                       'Syncing with: ${widget.masjidName}',
                       style: TextStyle(color: const Color(0xFFC9A84C).withValues(alpha: 0.8), fontSize: 13),
