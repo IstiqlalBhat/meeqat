@@ -176,64 +176,32 @@ html, body {
   letter-spacing: 0.05rem;
 }
 
-.qr-frame {
-  position: relative;
-  display: inline-block;
-  padding: 2.8rem;
-  background: #fffef8;
-  border-radius: 1.6rem;
-  box-shadow:
-    0 0 8rem rgba(201, 168, 76, 0.12),
-    0 2rem 8rem rgba(0, 0, 0, 0.6),
-    inset 0 0 0 0.1rem rgba(201, 168, 76, 0.1);
+/* ---- Hero Pair Code Digits ---- */
+.pair-code-hero {
+  display: flex;
+  gap: 1.8rem;
+  justify-content: center;
+  margin-bottom: 1rem;
 }
 
-.qr-corner {
-  position: absolute;
-  width: 2.8rem;
-  height: 2.8rem;
-  border-color: var(--gold-mid);
-  border-style: solid;
-}
-.qr-corner.tl { top: -0.5rem; left: -0.5rem; border-width: 0.4rem 0 0 0.4rem; border-radius: 0.6rem 0 0 0; }
-.qr-corner.tr { top: -0.5rem; right: -0.5rem; border-width: 0.4rem 0.4rem 0 0; border-radius: 0 0.6rem 0 0; }
-.qr-corner.bl { bottom: -0.5rem; left: -0.5rem; border-width: 0 0 0.4rem 0.4rem; border-radius: 0 0 0 0.6rem; }
-.qr-corner.br { bottom: -0.5rem; right: -0.5rem; border-width: 0 0.4rem 0.4rem 0; border-radius: 0 0 0.6rem 0; }
-
-/* QR target: fluid sizing, override JS inline 280px */
-#qr-target {
-  width: 28rem;
-  height: 28rem;
+.pair-digit {
   display: flex;
   align-items: center;
   justify-content: center;
-}
-
-#qr-target img,
-#qr-target canvas {
-  display: block;
-  width: 28rem !important;
-  height: 28rem !important;
-}
-
-.pair-code-display {
-  margin-top: 3.6rem;
-  font-size: 1.6rem;
-  color: var(--text-muted);
-  letter-spacing: 0.2rem;
-  text-transform: uppercase;
-  text-align: center;
-}
-
-.pair-code-value {
-  font-family: var(--font-body);
-  font-size: 4.4rem;
-  font-weight: 800;
-  letter-spacing: 1.6rem;
+  width: 9.6rem;
+  height: 12rem;
+  font-family: var(--font-display);
+  font-size: 6.4rem;
+  font-weight: 900;
   color: var(--gold-light);
-  display: block;
-  margin-top: 1rem;
-  text-shadow: 0 0 2rem rgba(232, 212, 139, 0.25);
+  background:
+    linear-gradient(160deg, rgba(201, 168, 76, 0.12), rgba(139, 105, 20, 0.04));
+  border: 0.2rem solid rgba(201, 168, 76, 0.3);
+  border-radius: 1.6rem;
+  text-shadow: 0 0 2.4rem rgba(232, 212, 139, 0.25);
+  box-shadow:
+    0 0.8rem 3.2rem rgba(0, 0, 0, 0.4),
+    inset 0 0.1rem 0 rgba(255, 255, 255, 0.04);
 }
 
 .pairing-status {
