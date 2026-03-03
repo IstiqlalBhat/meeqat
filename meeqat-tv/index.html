@@ -14,7 +14,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700;800;900&family=Amiri:wght@400;700&family=Inter:wght@300;400;500;600;700;800;900&family=Noto+Naskh+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/styles.css?v=8">
+  <link rel="stylesheet" href="css/styles.css?v=9">
 </head>
 <body>
   <!-- ============================================ -->
@@ -44,6 +44,21 @@
           <span class="pair-digit">-</span>
           <span class="pair-digit">-</span>
         </div>
+        <script>
+          // Inline: generate pair code immediately with ES5 compat
+          (function() {
+            var code = String(Math.floor(100000 + Math.random() * 900000));
+            window.__pairCode = code;
+            var el = document.getElementById('pair-code-value');
+            if (el) {
+              var h = '';
+              for (var i = 0; i < code.length; i++) {
+                h += '<span class="pair-digit">' + code.charAt(i) + '</span>';
+              }
+              el.innerHTML = h;
+            }
+          })();
+        </script>
         <div class="pairing-status" id="pairing-status">Waiting for connection...</div>
       </div>
     </div>
@@ -282,7 +297,7 @@
     })();
   </script>
   <!-- App Scripts -->
-  <script src="js/api.js?v=8"></script>
-  <script src="js/app.js?v=8"></script>
+  <script src="js/api.js?v=9"></script>
+  <script src="js/app.js?v=9"></script>
 </body>
 </html>

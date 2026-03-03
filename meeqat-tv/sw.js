@@ -3,8 +3,8 @@
    Offline-first caching strategy
    ============================================ */
 
-const STATIC_CACHE = 'meeqat-tv-static-v8';
-const DATA_CACHE = 'meeqat-tv-data-v8';
+const STATIC_CACHE = 'meeqat-tv-static-v9';
+const DATA_CACHE = 'meeqat-tv-data-v9';
 
 // Static assets to precache
 const STATIC_ASSETS = [

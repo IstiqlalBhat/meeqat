@@ -37,7 +37,7 @@ const MeeqatAPI = (() => {
         return null;
       }
       return data;
-    } catch {
+    } catch (e) {
       return null;
     }
   }
@@ -48,7 +48,7 @@ const MeeqatAPI = (() => {
         data,
         expiry: Date.now() + duration
       }));
-    } catch {
+    } catch (e) {
       // Storage full - clear old caches
       clearOldCaches();
     }
