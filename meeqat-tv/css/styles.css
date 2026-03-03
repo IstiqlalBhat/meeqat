@@ -52,6 +52,7 @@
    Picks the smaller of width-based or height-based
    ============================================ */
 html {
+  font-size: calc(100vw / 192);  /* fallback for TV browsers that don't support min() */
   font-size: min(calc(100vw / 192), calc(100vh / 108));
 }
 
