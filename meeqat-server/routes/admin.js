@@ -574,19 +574,26 @@ router.post('/iqamah-standards', requireMasjid, async (req, res) => {
 
   try {
     // Delete all existing rules for this masjid
-    await supabase.from('iqamah_rules').delete().eq('masjid_id', masjidId);
+    const { error: deleteError } = await supabase.from('iqamah_rules').delete().eq('masjid_id', masjidId);
+    if (deleteError) throw deleteError;
 
-    // Insert new rules
+    // Collect new rules to insert
+    const rowsToInsert = [];
     for (const prayer of prayers) {
       const ruleType = req.body[`rule_type_${prayer}`];
       if (!ruleType || ruleType === 'none') continue;
 
-      const value = req.body[`value_${prayer}`] || '';
+      // Handle value — may arrive as array if duplicate form fields submit
+      let rawValue = req.body[`value_${prayer}`];
+      if (Array.isArray(rawValue)) {
+        rawValue = rawValue.find(v => v && v.trim() !== '') || '';
+      }
+      const value = (rawValue || '').toString().trim();
       const reference = req.body[`reference_${prayer}`] || null;
 
       if (!value) continue;
 
-      await supabase.from('iqamah_rules').insert({
+      rowsToInsert.push({
         masjid_id: masjidId,
         prayer,
         rule_type: ruleType,
@@ -595,10 +602,16 @@ router.post('/iqamah-standards', requireMasjid, async (req, res) => {
       });
     }
 
-    req.session.flash = { type: 'success', message: 'Iqamah standards saved' };
+    // Batch insert all rules at once
+    if (rowsToInsert.length > 0) {
+      const { error: insertError } = await supabase.from('iqamah_rules').insert(rowsToInsert);
+      if (insertError) throw insertError;
+    }
+
+    req.session.flash = { type: 'success', message: `Iqamah standards saved (${rowsToInsert.length} rules)` };
   } catch (err) {
     console.error('Iqamah standards save error:', err);
-    req.session.flash = { type: 'error', message: 'Failed to save iqamah standards' };
+    req.session.flash = { type: 'error', message: 'Failed to save: ' + (err.message || err) };
   }
 
   res.redirect('/admin/iqamah-standards');

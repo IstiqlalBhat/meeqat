@@ -65,7 +65,7 @@
                     <span class="text-sm text-muted group-hover:text-charcoal transition-colors">Fixed time</span>
                   </label>
                   <div id="input-fixed-<%= prayer %>" class="ml-7 <%= currentType === 'fixed' ? '' : 'hidden' %>">
-                    <input type="time" name="value_<%= prayer %>"
+                    <input type="time" <%= currentType === 'fixed' ? 'name="value_' + prayer + '"' : '' %>
                       value="<%= currentType === 'fixed' ? currentValue : '' %>"
                       data-rule-type="fixed"
                       class="px-3 py-2 rounded-xl border border-cream-200 bg-cream-50 text-charcoal focus:outline-none focus:ring-2 focus:ring-gold-400 text-sm w-40">
@@ -82,7 +82,7 @@
                   </label>
                   <div id="input-after_adhan-<%= prayer %>" class="ml-7 <%= currentType === 'after_adhan' ? '' : 'hidden' %>">
                     <div class="flex items-center gap-2">
-                      <input type="number" name="value_<%= prayer %>" min="0" max="120"
+                      <input type="number" <%= currentType === 'after_adhan' ? 'name="value_' + prayer + '"' : '' %> min="0" max="120"
                         value="<%= currentType === 'after_adhan' ? currentValue : '' %>"
                         data-rule-type="after_adhan"
                         placeholder="15"
@@ -101,7 +101,7 @@
                   </label>
                   <div id="input-after_reference-<%= prayer %>" class="ml-7 <%= currentType === 'after_reference' ? '' : 'hidden' %>">
                     <div class="flex flex-wrap items-center gap-2">
-                      <input type="number" name="value_<%= prayer %>" min="0" max="120"
+                      <input type="number" <%= currentType === 'after_reference' ? 'name="value_' + prayer + '"' : '' %> min="0" max="120"
                         value="<%= currentType === 'after_reference' ? currentValue : '' %>"
                         data-rule-type="after_reference"
                         placeholder="40"
