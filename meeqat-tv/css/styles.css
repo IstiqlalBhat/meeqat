@@ -394,7 +394,7 @@ html, body {
 
 .clock-ampm {
   font-family: var(--font-display);
-  font-size: 1.8rem;
+  font-size: 2.2rem;
   font-weight: 700;
   color: var(--gold-light);
   letter-spacing: 0.5rem;
@@ -412,9 +412,9 @@ html, body {
   justify-content: center;
   margin-top: 1.2rem;
   padding: 0.8rem 3rem;
-  font-size: 1.4rem;
+  font-size: 1.7rem;
   font-weight: 600;
-  letter-spacing: 0.3rem;
+  letter-spacing: 0.25rem;
   color: var(--text-muted);
   background: linear-gradient(90deg, transparent, rgba(201, 168, 76, 0.07), transparent);
   border-top: 0.1rem solid rgba(201, 168, 76, 0.14);
@@ -432,20 +432,20 @@ html, body {
 
 .date-bar-label {
   font-weight: 800;
-  font-size: 1.1rem;
-  letter-spacing: 0.35rem;
+  font-size: 1.4rem;
+  letter-spacing: 0.3rem;
   color: var(--gold-mid);
 }
 
 .date-bar-time {
   font-weight: 700;
   color: var(--cream);
-  font-size: 1.5rem;
+  font-size: 1.8rem;
   letter-spacing: 0.05rem;
 }
 
 .date-bar-time .time-suffix {
-  font-size: 1rem;
+  font-size: 1.2rem;
   font-weight: 600;
   opacity: 0.55;
   margin-left: 0.15rem;
@@ -474,12 +474,12 @@ html, body {
 
 .masjid-emblem-name {
   font-family: var(--font-display);
-  font-size: 1.1rem;
+  font-size: 1.4rem;
   font-weight: 700;
   letter-spacing: 0.4rem;
   text-transform: uppercase;
   color: var(--gold-mid);
-  opacity: 0.4;
+  opacity: 0.55;
 }
 
 /* ============================================
@@ -520,7 +520,7 @@ html, body {
 }
 
 .table-header > div {
-  font-size: 1.3rem;
+  font-size: 1.5rem;
   font-weight: 800;
   letter-spacing: 0.5rem;
   text-transform: uppercase;
@@ -651,10 +651,10 @@ html, body {
 
 .prayer-arabic {
   font-family: var(--font-arabic);
-  font-size: 2rem;
+  font-size: 2.2rem;
   font-weight: 600;
   color: var(--gold-light);
-  opacity: 0.4;
+  opacity: 0.5;
   direction: rtl;
 }
 
@@ -684,9 +684,9 @@ html, body {
 }
 
 .time-suffix {
-  font-size: 1.3rem;
+  font-size: 1.5rem;
   font-weight: 600;
-  opacity: 0.5;
+  opacity: 0.55;
   margin-left: 0.2rem;
   letter-spacing: 0;
   vertical-align: baseline;
@@ -737,7 +737,7 @@ html, body {
 }
 
 .current-prayer-label {
-  font-size: 1.1rem;
+  font-size: 1.4rem;
   font-weight: 800;
   letter-spacing: 0.5rem;
   text-transform: uppercase;
@@ -783,7 +783,7 @@ html, body {
 
 .current-prayer-details {
   text-align: center;
-  font-size: 1.2rem;
+  font-size: 1.4rem;
   font-weight: 600;
   letter-spacing: 0.15rem;
   color: var(--text-muted);
@@ -827,7 +827,7 @@ html, body {
 }
 
 .countdown-label {
-  font-size: 1.1rem;
+  font-size: 1.4rem;
   font-weight: 800;
   letter-spacing: 0.4rem;
   text-transform: uppercase;
@@ -872,14 +872,14 @@ html, body {
 
 .countdown-unit {
   font-family: var(--font-display);
-  font-size: 1.4rem;
+  font-size: 1.6rem;
   font-weight: 800;
   letter-spacing: 0.15rem;
   color: var(--gold-mid);
 }
 
 .countdown-prayer-name {
-  font-size: 1.1rem;
+  font-size: 1.4rem;
   font-weight: 600;
   letter-spacing: 0.2rem;
   color: var(--text-muted);
@@ -1122,7 +1122,7 @@ html, body {
 /* Jumuah Friday */
 .prayer-row[data-prayer="dhuhr"].jumuah .prayer-english::after {
   content: ' / JUMUAH';
-  font-size: 1.3rem;
+  font-size: 1.5rem;
   font-weight: 700;
   color: var(--gold-light);
   letter-spacing: 0.2rem;
