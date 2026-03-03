@@ -5,6 +5,7 @@ const path = require('path');
 const { supabase } = require('../db/supabase');
 const { bucket } = require('../db/firebase');
 const { requireAuth, loadMasjid, requireMasjid } = require('../middleware/auth');
+const { calculateIqamahFromRule } = require('../utils/iqamah');
 
 const router = express.Router();
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 4 * 1024 * 1024 } });
@@ -298,8 +299,10 @@ router.get('/monthly-timings', requireMasjid, async (req, res) => {
         const isoDate = `${yyyy}-${mm}-${dd}`;
         apiMonth[isoDate] = {
           fajr: (t.Fajr || '').replace(/ \(.*\)/, ''),
+          sunrise: (t.Sunrise || '').replace(/ \(.*\)/, ''),
           dhuhr: (t.Dhuhr || '').replace(/ \(.*\)/, ''),
           asr: (t.Asr || '').replace(/ \(.*\)/, ''),
+          sunset: (t.Sunset || '').replace(/ \(.*\)/, ''),
           maghrib: (t.Maghrib || '').replace(/ \(.*\)/, ''),
           isha: (t.Isha || '').replace(/ \(.*\)/, '')
         };
@@ -340,7 +343,27 @@ router.get('/monthly-timings', requireMasjid, async (req, res) => {
     permanentMap[o.prayer] = { athan_time: o.athan_time, iqamah_time: o.iqamah_time };
   }
 
-  res.render('monthly-timings', { masjid, month, year, daysInMonth, prayers, apiMonth, overrideMap, permanentMap });
+  // Fetch iqamah rules and compute rule-based iqamah for each day/prayer
+  const { data: iqamahRules } = await supabase
+    .from('iqamah_rules')
+    .select('prayer, rule_type, value, reference_prayer')
+    .eq('masjid_id', masjid.id);
+
+  const ruleMap = {};
+  for (const r of (iqamahRules || [])) ruleMap[r.prayer] = r;
+
+  // ruleIqamahMap[date][prayer] = computed iqamah time (or null)
+  const ruleIqamahMap = {};
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dateStr = year + '-' + String(month).padStart(2, '0') + '-' + String(d).padStart(2, '0');
+    const dayApi = apiMonth[dateStr] || {};
+    ruleIqamahMap[dateStr] = {};
+    for (const prayer of prayers) {
+      ruleIqamahMap[dateStr][prayer] = calculateIqamahFromRule(ruleMap[prayer], dayApi, prayer);
+    }
+  }
+
+  res.render('monthly-timings', { masjid, month, year, daysInMonth, prayers, apiMonth, overrideMap, permanentMap, ruleIqamahMap });
 });
 
 router.post('/monthly-timings', requireMasjid, express.json(), async (req, res) => {
@@ -519,6 +542,56 @@ router.post('/jumuah', requireMasjid, async (req, res) => {
 
   req.session.flash = { type: 'success', message: "Jumu'ah times saved" };
   res.redirect('/admin/jumuah');
+});
+
+// ─── Iqamah Standards ────────────────────────────────────────
+
+router.get('/iqamah-standards', requireMasjid, async (req, res) => {
+  const { data: rules } = await supabase
+    .from('iqamah_rules')
+    .select('*')
+    .eq('masjid_id', req.masjid.id);
+
+  const ruleMap = {};
+  for (const r of (rules || [])) ruleMap[r.prayer] = r;
+
+  res.render('iqamah-standards', { masjid: req.masjid, ruleMap });
+});
+
+router.post('/iqamah-standards', requireMasjid, async (req, res) => {
+  const masjidId = req.masjid.id;
+  const prayers = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'];
+
+  try {
+    // Delete all existing rules for this masjid
+    await supabase.from('iqamah_rules').delete().eq('masjid_id', masjidId);
+
+    // Insert new rules
+    for (const prayer of prayers) {
+      const ruleType = req.body[`rule_type_${prayer}`];
+      if (!ruleType || ruleType === 'none') continue;
+
+      const value = req.body[`value_${prayer}`] || '';
+      const reference = req.body[`reference_${prayer}`] || null;
+
+      if (!value) continue;
+
+      await supabase.from('iqamah_rules').insert({
+        masjid_id: masjidId,
+        prayer,
+        rule_type: ruleType,
+        value,
+        reference_prayer: ruleType === 'after_reference' ? reference : null
+      });
+    }
+
+    req.session.flash = { type: 'success', message: 'Iqamah standards saved' };
+  } catch (err) {
+    console.error('Iqamah standards save error:', err);
+    req.session.flash = { type: 'error', message: 'Failed to save iqamah standards' };
+  }
+
+  res.redirect('/admin/iqamah-standards');
 });
 
 // ─── Announcements ───────────────────────────────────────────

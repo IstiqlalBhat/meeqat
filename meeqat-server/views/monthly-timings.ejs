@@ -169,6 +169,13 @@
                         placeholder="<%= apiTime %>"
                         onchange="trackChange(this)">
                     </td>
+                    <%
+                      var ruleIqamah = '';
+                      if (typeof ruleIqamahMap !== 'undefined' && ruleIqamahMap[dateStr] && ruleIqamahMap[dateStr][prayer]) {
+                        ruleIqamah = ruleIqamahMap[dateStr][prayer];
+                      }
+                      var iqamahPlaceholder = ruleIqamah || '';
+                    %>
                     <td class="px-1 py-1">
                       <input type="time"
                         class="monthly-cell w-full text-center text-xs px-1 py-1.5 rounded border border-transparent focus:border-sage-400 focus:outline-none focus:ring-1 focus:ring-sage-400/30
@@ -176,7 +183,8 @@
                         data-date="<%= dateStr %>" data-prayer="<%= prayer %>" data-field="iqamah_time"
                         data-original="<%= iqamahVal %>"
                         value="<%= iqamahVal %>"
-                        placeholder="<%= apiTime %>"
+                        placeholder="<%= iqamahPlaceholder %>"
+                        <% if (ruleIqamah) { %>title="Rule: <%= ruleIqamah %>"<% } %>
                         onchange="trackChange(this)">
                     </td>
                     <% } %>

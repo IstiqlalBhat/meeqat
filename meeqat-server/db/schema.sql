@@ -40,6 +40,18 @@ CREATE TABLE IF NOT EXISTS jumuah_times (
   UNIQUE(masjid_id)
 );
 
+CREATE TABLE IF NOT EXISTS iqamah_rules (
+  id SERIAL PRIMARY KEY,
+  masjid_id INTEGER NOT NULL REFERENCES masjids(id) ON DELETE CASCADE,
+  prayer TEXT NOT NULL,
+  rule_type TEXT NOT NULL,
+  value TEXT NOT NULL,
+  reference_prayer TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE UNIQUE INDEX IF NOT EXISTS iqamah_rules_unique ON iqamah_rules (masjid_id, prayer);
+
 CREATE TABLE IF NOT EXISTS announcements (
   id SERIAL PRIMARY KEY,
   masjid_id INTEGER NOT NULL REFERENCES masjids(id) ON DELETE CASCADE,

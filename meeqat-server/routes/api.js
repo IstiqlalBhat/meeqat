@@ -1,6 +1,7 @@
 const express = require('express');
 const fetch = require('node-fetch');
 const { supabase } = require('../db/supabase');
+const { calculateIqamahFromRule } = require('../utils/iqamah');
 
 const router = express.Router();
 
@@ -150,15 +151,31 @@ router.get('/masjids/:id/times', async (req, res) => {
   for (const o of (permanentOverrides || [])) overrideMap[o.prayer] = o;
   for (const o of (dateOverrides || [])) overrideMap[o.prayer] = o;
 
+  // Fetch iqamah rules for this masjid
+  const { data: iqamahRules } = await supabase
+    .from('iqamah_rules')
+    .select('prayer, rule_type, value, reference_prayer')
+    .eq('masjid_id', masjid.id);
+
+  const ruleMap = {};
+  for (const r of (iqamahRules || [])) ruleMap[r.prayer] = r;
+
   // Merge times
   const times = {};
   for (const prayer of prayers) {
     const override = overrideMap[prayer];
     const apiTime = apiTimes ? apiTimes[prayer] : null;
 
+    let iqamah = null;
+    if (override && override.iqamah_time) {
+      iqamah = override.iqamah_time;
+    } else if (ruleMap[prayer]) {
+      iqamah = calculateIqamahFromRule(ruleMap[prayer], apiTimes, prayer);
+    }
+
     times[prayer] = {
       athan: override && override.athan_time ? override.athan_time : (apiTime || null),
-      iqamah: override && override.iqamah_time ? override.iqamah_time : null,
+      iqamah,
       source: override && override.athan_time ? 'override' : 'api'
     };
   }
