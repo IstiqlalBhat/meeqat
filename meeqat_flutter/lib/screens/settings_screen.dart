@@ -606,18 +606,21 @@ class _TvScannerScreenState extends State<_TvScannerScreen> {
     super.dispose();
   }
 
-  /// Extract pair code from QR URL like:
+  /// Extract pair code and optional backend URL from QR value like:
   /// "https://server/api/tv/pair?code=123456"
-  String? _extractPairCode(String rawValue) {
+  ({String code, String? backendUrl})? _extractPairInfo(String rawValue) {
     try {
-      final uri = Uri.parse(rawValue);
-      // Check query parameter
-      final code = uri.queryParameters['code'];
-      if (code != null && code.length == 6) return code;
-
-      // Also handle if QR just contains a 6-digit code directly
+      // Handle if QR just contains a 6-digit code directly
       if (RegExp(r'^\d{6}$').hasMatch(rawValue.trim())) {
-        return rawValue.trim();
+        return (code: rawValue.trim(), backendUrl: null);
+      }
+
+      final uri = Uri.parse(rawValue);
+      final code = uri.queryParameters['code'];
+      if (code != null && code.length == 6) {
+        // Extract backend URL from the QR URL (scheme + host)
+        final backendUrl = '${uri.scheme}://${uri.host}${uri.hasPort ? ':${uri.port}' : ''}';
+        return (code: code, backendUrl: backendUrl);
       }
     } catch (_) {}
     return null;
@@ -629,8 +632,8 @@ class _TvScannerScreenState extends State<_TvScannerScreen> {
     final barcode = capture.barcodes.firstOrNull;
     if (barcode == null || barcode.rawValue == null) return;
 
-    final pairCode = _extractPairCode(barcode.rawValue!);
-    if (pairCode == null) {
+    final pairInfo = _extractPairInfo(barcode.rawValue!);
+    if (pairInfo == null) {
       setState(() => _errorMessage = 'Invalid QR code. Please scan the code on the TV display.');
       return;
     }
@@ -641,8 +644,10 @@ class _TvScannerScreenState extends State<_TvScannerScreen> {
     });
 
     try {
-      final service = BackendService(baseUrl: widget.backendUrl);
-      await service.pairTvDevice(pairCode, widget.masjidId);
+      // Use backend URL from QR code if available, otherwise fall back to widget's URL
+      final baseUrl = pairInfo.backendUrl ?? widget.backendUrl;
+      final service = BackendService(baseUrl: baseUrl);
+      await service.pairTvDevice(pairInfo.code, widget.masjidId);
 
       if (!mounted) return;
       setState(() {

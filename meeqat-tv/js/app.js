@@ -136,13 +136,7 @@ const MeeqatTV = (() => {
 
   // ---- Backend URL Setup ----
   function promptBackendUrl() {
-    const saved = MeeqatAPI.getBackendUrl();
-    if (saved) {
-      showPairingScreen();
-      return;
-    }
-
-    // For TV deployment, use URL parameters or default
+    // Check URL parameters first (e.g. ?server=https://api.example.com)
     const params = new URLSearchParams(window.location.search);
     const urlParam = params.get('server') || params.get('backend');
 
@@ -152,13 +146,22 @@ const MeeqatTV = (() => {
       return;
     }
 
-    // Default - try same origin or prompt
-    // For production, set this to your deployed backend URL
-    const defaultUrl = window.location.origin.includes('localhost')
-      ? 'http://localhost:3000'
-      : window.location.origin;
+    // Check saved backend URL
+    const saved = MeeqatAPI.getBackendUrl();
+    if (saved) {
+      showPairingScreen();
+      return;
+    }
 
-    MeeqatAPI.setBackendUrl(defaultUrl);
+    // On localhost, default to port 3000
+    if (window.location.origin.includes('localhost') || window.location.origin.includes('127.0.0.1')) {
+      MeeqatAPI.setBackendUrl('http://localhost:3000');
+      showPairingScreen();
+      return;
+    }
+
+    // On production, default to the Meeqat server
+    MeeqatAPI.setBackendUrl('https://clemsonmasjid.vercel.app');
     showPairingScreen();
   }
 
@@ -213,15 +216,29 @@ const MeeqatTV = (() => {
     }
   }
 
+  let registerRetryCount = 0;
+
   async function registerAndPoll() {
     const statusEl = document.getElementById('pairing-status');
+    const backend = MeeqatAPI.getBackendUrl();
+
+    // No backend configured - show pairing code only, no polling
+    if (!backend) {
+      statusEl.textContent = 'Scan QR code or enter pair code in the Meeqat app';
+      return;
+    }
 
     try {
       await MeeqatAPI.registerDevice(deviceId, pairCode);
       statusEl.textContent = 'Waiting for connection...';
+      registerRetryCount = 0;
     } catch (err) {
+      registerRetryCount++;
+      // Exponential backoff: 5s, 10s, 20s, 30s max
+      const delay = Math.min(5000 * Math.pow(2, registerRetryCount - 1), 30000);
       statusEl.textContent = 'Could not reach server. Retrying...';
-      setTimeout(registerAndPoll, 5000);
+      console.warn('Backend unreachable, retry in', delay / 1000, 's');
+      setTimeout(registerAndPoll, delay);
       return;
     }
 
