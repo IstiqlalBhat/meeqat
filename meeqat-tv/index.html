@@ -186,13 +186,13 @@
         <div class="current-prayer-card" id="current-prayer-card">
           <div class="card-ornament top"></div>
           <div class="card-ornament bottom"></div>
-          <div class="current-prayer-label">**CURRENT PRAYER**</div>
+          <div class="current-prayer-label" id="current-prayer-label">CURRENT PRAYER</div>
           <div class="current-prayer-display">
             <span class="current-prayer-arabic" id="current-prayer-arabic">&#x0627;&#x0644;&#x0638;&#x0647;&#x0631;</span>
             <span class="current-prayer-english" id="current-prayer-english">DHUHR</span>
           </div>
           <div class="current-prayer-details" id="current-prayer-details">
-            STARTS: --:-- | --:-- | IQAMAH: --:--
+            ATHAN: --:-- | IQAMAH: --:--
           </div>
         </div>
 
@@ -200,16 +200,47 @@
         <div class="countdown-card" id="countdown-card">
           <div class="card-ornament top"></div>
           <div class="card-ornament bottom"></div>
-          <div class="countdown-label">NEXT IQAMAH IN</div>
-          <div class="countdown-display">
-            <div class="countdown-block">
-              <span class="countdown-value" id="countdown-hours">0</span>
-              <span class="countdown-unit">HR</span>
+
+          <!-- Next Athan Countdown -->
+          <div class="countdown-section" id="athan-countdown-section">
+            <div class="countdown-label">NEXT ATHAN IN</div>
+            <div class="countdown-display">
+              <div class="countdown-block">
+                <span class="countdown-value" id="athan-countdown-hours">0</span>
+                <span class="countdown-unit">HR</span>
+              </div>
+              <div class="countdown-block">
+                <span class="countdown-value" id="athan-countdown-minutes">00</span>
+                <span class="countdown-unit">MIN</span>
+              </div>
+              <div class="countdown-block">
+                <span class="countdown-value countdown-seconds" id="athan-countdown-seconds">00</span>
+                <span class="countdown-unit">SEC</span>
+              </div>
             </div>
-            <div class="countdown-block">
-              <span class="countdown-value" id="countdown-minutes">00</span>
-              <span class="countdown-unit">MIN</span>
+            <div class="countdown-prayer-name" id="athan-countdown-name">--</div>
+          </div>
+
+          <div class="countdown-divider"></div>
+
+          <!-- Next Iqamah Countdown -->
+          <div class="countdown-section" id="iqamah-countdown-section">
+            <div class="countdown-label">NEXT IQAMAH IN</div>
+            <div class="countdown-display">
+              <div class="countdown-block">
+                <span class="countdown-value" id="countdown-hours">0</span>
+                <span class="countdown-unit">HR</span>
+              </div>
+              <div class="countdown-block">
+                <span class="countdown-value" id="countdown-minutes">00</span>
+                <span class="countdown-unit">MIN</span>
+              </div>
+              <div class="countdown-block">
+                <span class="countdown-value countdown-seconds" id="countdown-seconds">00</span>
+                <span class="countdown-unit">SEC</span>
+              </div>
             </div>
+            <div class="countdown-prayer-name" id="iqamah-countdown-name">--</div>
           </div>
         </div>
       </aside>

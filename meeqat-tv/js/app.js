@@ -471,6 +471,7 @@ const MeeqatTV = (() => {
     }
 
     // Update current prayer card
+    const labelEl = document.getElementById('current-prayer-label');
     const arabicEl = document.getElementById('current-prayer-arabic');
     const englishEl = document.getElementById('current-prayer-english');
     const detailsEl = document.getElementById('current-prayer-details');
@@ -478,19 +479,34 @@ const MeeqatTV = (() => {
 
     if (current) {
       card.classList.remove('between-prayers');
+      labelEl.textContent = 'CURRENT PRAYER';
       arabicEl.textContent = PRAYER_ARABIC[current] || '';
       englishEl.textContent = current.toUpperCase();
 
       const t = times[current];
       if (t) {
-        const starts = formatTime12(t.athan);
+        const athan = formatTime12(t.athan);
         const iqamah = t.iqamah ? formatTime12(t.iqamah) : '--';
-        detailsEl.textContent = `STARTS: ${starts} | ATHAN: ${starts} | IQAMAH: ${iqamah}`;
+        detailsEl.textContent = `ATHAN: ${athan}  |  IQAMAH: ${iqamah}`;
+      }
+    } else if (next) {
+      // Between prayers — show the upcoming prayer
+      card.classList.remove('between-prayers');
+      labelEl.textContent = 'UP NEXT';
+      arabicEl.textContent = PRAYER_ARABIC[next] || '';
+      englishEl.textContent = next.toUpperCase();
+
+      const t = times[next];
+      if (t) {
+        const athan = formatTime12(t.athan);
+        const iqamah = t.iqamah ? formatTime12(t.iqamah) : '--';
+        detailsEl.textContent = `ATHAN: ${athan}  |  IQAMAH: ${iqamah}`;
       }
     } else {
       card.classList.add('between-prayers');
+      labelEl.textContent = 'CURRENT PRAYER';
       arabicEl.textContent = '--';
-      englishEl.textContent = 'BETWEEN PRAYERS';
+      englishEl.textContent = '--';
       detailsEl.textContent = '';
     }
 
@@ -502,34 +518,81 @@ const MeeqatTV = (() => {
 
     const now = new Date();
     const times = prayerData.times;
+    let nextAthanTime = null;
+    let nextAthanPrayer = null;
     let nextIqamahTime = null;
+    let nextIqamahPrayer = null;
 
-    // Find next upcoming iqamah
+    // Find next upcoming athan and iqamah
     for (const prayer of PRAYERS) {
       const t = times[prayer];
-      if (!t || !t.iqamah) continue;
+      if (!t) continue;
 
-      const iqamahDt = parseTime(t.iqamah);
-      if (iqamahDt && iqamahDt > now) {
-        nextIqamahTime = iqamahDt;
-        break;
+      if (!nextAthanTime && t.athan) {
+        const athanDt = parseTime(t.athan);
+        if (athanDt && athanDt > now) {
+          nextAthanTime = athanDt;
+          nextAthanPrayer = prayer;
+        }
       }
+
+      if (!nextIqamahTime && t.iqamah) {
+        const iqamahDt = parseTime(t.iqamah);
+        if (iqamahDt && iqamahDt > now) {
+          nextIqamahTime = iqamahDt;
+          nextIqamahPrayer = prayer;
+        }
+      }
+
+      if (nextAthanTime && nextIqamahTime) break;
     }
 
+    // Update athan countdown
+    const athanHoursEl = document.getElementById('athan-countdown-hours');
+    const athanMinsEl = document.getElementById('athan-countdown-minutes');
+    const athanSecsEl = document.getElementById('athan-countdown-seconds');
+    const athanNameEl = document.getElementById('athan-countdown-name');
+
+    if (nextAthanTime) {
+      const diff = nextAthanTime - now;
+      const totalSecs = Math.max(0, Math.floor(diff / 1000));
+      const hours = Math.floor(totalSecs / 3600);
+      const mins = Math.floor((totalSecs % 3600) / 60);
+      const secs = totalSecs % 60;
+
+      athanHoursEl.textContent = hours;
+      athanMinsEl.textContent = mins.toString().padStart(2, '0');
+      athanSecsEl.textContent = secs.toString().padStart(2, '0');
+      athanNameEl.textContent = nextAthanPrayer.toUpperCase() + ' — ' + formatTime12(times[nextAthanPrayer].athan);
+    } else {
+      athanHoursEl.textContent = '0';
+      athanMinsEl.textContent = '00';
+      athanSecsEl.textContent = '00';
+      athanNameEl.textContent = '--';
+    }
+
+    // Update iqamah countdown
     const hoursEl = document.getElementById('countdown-hours');
     const minutesEl = document.getElementById('countdown-minutes');
+    const secondsEl = document.getElementById('countdown-seconds');
+    const iqamahNameEl = document.getElementById('iqamah-countdown-name');
 
     if (nextIqamahTime) {
       const diff = nextIqamahTime - now;
-      const totalMinutes = Math.ceil(diff / 60000);
-      const hours = Math.floor(totalMinutes / 60);
-      const mins = totalMinutes % 60;
+      const totalSecs = Math.max(0, Math.floor(diff / 1000));
+      const hours = Math.floor(totalSecs / 3600);
+      const mins = Math.floor((totalSecs % 3600) / 60);
+      const secs = totalSecs % 60;
 
       hoursEl.textContent = hours;
       minutesEl.textContent = mins.toString().padStart(2, '0');
+      secondsEl.textContent = secs.toString().padStart(2, '0');
+      iqamahNameEl.textContent = nextIqamahPrayer.toUpperCase() + ' — ' + formatTime12(times[nextIqamahPrayer].iqamah);
     } else {
       hoursEl.textContent = '0';
       minutesEl.textContent = '00';
+      secondsEl.textContent = '00';
+      iqamahNameEl.textContent = '--';
     }
   }
 
