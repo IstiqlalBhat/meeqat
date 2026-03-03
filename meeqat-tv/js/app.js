@@ -178,11 +178,13 @@ const MeeqatTV = (() => {
 
     pairCode = generatePairCode();
 
-    // Display pair code as individual digits
-    const digitEls = document.querySelectorAll('#pair-code-value .pair-digit');
-    for (let i = 0; i < digitEls.length; i++) {
-      digitEls[i].textContent = pairCode[i] || '-';
+    // Display pair code as individual digits (innerHTML for max TV browser compat)
+    var container = document.getElementById('pair-code-value');
+    var digits = '';
+    for (var d = 0; d < pairCode.length; d++) {
+      digits += '<span class="pair-digit">' + pairCode.charAt(d) + '</span>';
     }
+    container.innerHTML = digits;
 
     // Register device with backend
     registerAndPoll();
