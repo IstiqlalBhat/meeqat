@@ -11,6 +11,7 @@ const MeeqatAPI = (() => {
     masjid: 60 * 60 * 1000        // 1 hour for masjid details
   };
 
+  const DEFAULT_BACKEND = 'https://clemsonmasjid.vercel.app';
   let backendUrl = '';
 
   function setBackendUrl(url) {
@@ -20,7 +21,7 @@ const MeeqatAPI = (() => {
 
   function getBackendUrl() {
     if (!backendUrl) {
-      backendUrl = localStorage.getItem('meeqat_tv_backend_url') || '';
+      backendUrl = localStorage.getItem('meeqat_tv_backend_url') || DEFAULT_BACKEND;
     }
     return backendUrl;
   }
