@@ -17,6 +17,12 @@ const MeeqatTV = (() => {
   let clockInterval = null;
   let dataRefreshInterval = null;
   let tickerAnimFrame = null;
+  let slideshowInterval = null;
+  let slideshowDuration = 10; // seconds per slide
+  let mediaAnnouncements = [];
+  let currentSlideIndex = 0;
+  let slideshowActive = false;
+  let slideshowCycleTimeout = null;
 
   const PRAYERS = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'];
   const PRAYER_ARABIC = {
@@ -293,9 +299,37 @@ const MeeqatTV = (() => {
 
   async function loadAnnouncements() {
     try {
-      const { data } = await MeeqatAPI.fetchAnnouncements(masjidId);
+      var result = await MeeqatAPI.fetchAnnouncements(masjidId);
+      var data = result.data;
       announcementsData = data.announcements || [];
+      slideshowDuration = data.slideshow_duration || 10;
+
+      // Separate text announcements from media announcements
+      var textAnnouncements = [];
+      mediaAnnouncements = [];
+      for (var i = 0; i < announcementsData.length; i++) {
+        var ann = announcementsData[i];
+        var type = ann.media_type || 'text';
+        if (type === 'image' && ann.image_url) {
+          mediaAnnouncements.push(ann);
+        } else if (type === 'video' && ann.video_url) {
+          mediaAnnouncements.push(ann);
+        } else {
+          textAnnouncements.push(ann);
+        }
+      }
+
+      // Text announcements go to the ticker
+      announcementsData = textAnnouncements;
       updateTickerDisplay();
+
+      // Media announcements go to the slideshow
+      if (mediaAnnouncements.length > 0) {
+        buildSlideshow();
+        startSlideshowCycle();
+      } else {
+        stopSlideshow();
+      }
     } catch (err) {
       console.warn('Failed to load announcements:', err);
     }
@@ -633,6 +667,153 @@ const MeeqatTV = (() => {
     const speed = Math.max(20, totalLength * 0.3); // seconds
     tickerEl.style.animationDuration = `${speed}s`;
     tickerEl.style.animation = `ticker-scroll ${speed}s linear infinite`;
+  }
+
+  // ---- Slideshow ----
+  function buildSlideshow() {
+    var container = document.getElementById('slideshow-container');
+    var dotsContainer = document.getElementById('slideshow-dots');
+    if (!container || !dotsContainer) return;
+
+    var slidesHtml = '';
+    var dotsHtml = '';
+
+    for (var i = 0; i < mediaAnnouncements.length; i++) {
+      var ann = mediaAnnouncements[i];
+      var type = ann.media_type || 'text';
+      var activeClass = i === 0 ? ' active' : '';
+
+      slidesHtml += '<div class="slideshow-slide' + activeClass + '" data-slide="' + i + '">';
+
+      if (type === 'image' && ann.image_url) {
+        slidesHtml += '<img src="' + escapeHtml(ann.image_url) + '" alt="' + escapeHtml(ann.title) + '">';
+      } else if (type === 'video' && ann.video_url) {
+        slidesHtml += '<video src="' + escapeHtml(ann.video_url) + '" autoplay muted loop playsinline></video>';
+      }
+
+      // Caption overlay
+      if (ann.title || ann.body) {
+        slidesHtml += '<div class="slideshow-caption">';
+        if (ann.title) {
+          slidesHtml += '<div class="slideshow-caption-title">' + escapeHtml(ann.title) + '</div>';
+        }
+        if (ann.body) {
+          slidesHtml += '<div class="slideshow-caption-body">' + escapeHtml(ann.body) + '</div>';
+        }
+        slidesHtml += '</div>';
+      }
+
+      slidesHtml += '</div>';
+
+      dotsHtml += '<div class="slideshow-dot' + activeClass + '" data-dot="' + i + '"></div>';
+    }
+
+    container.innerHTML = slidesHtml;
+    dotsContainer.innerHTML = dotsHtml;
+    currentSlideIndex = 0;
+  }
+
+  function showSlide(index) {
+    var container = document.getElementById('slideshow-container');
+    if (!container) return;
+
+    var slides = container.querySelectorAll('.slideshow-slide');
+    var dots = document.querySelectorAll('.slideshow-dot');
+
+    for (var i = 0; i < slides.length; i++) {
+      if (i === index) {
+        slides[i].className = 'slideshow-slide active';
+        // Play video if it's a video slide
+        var video = slides[i].querySelector('video');
+        if (video) {
+          try { video.play(); } catch (e) {}
+        }
+      } else {
+        slides[i].className = 'slideshow-slide';
+        // Pause video on inactive slides
+        var vid = slides[i].querySelector('video');
+        if (vid) {
+          try { vid.pause(); } catch (e) {}
+        }
+      }
+    }
+
+    for (var j = 0; j < dots.length; j++) {
+      dots[j].className = j === index ? 'slideshow-dot active' : 'slideshow-dot';
+    }
+
+    currentSlideIndex = index;
+  }
+
+  function nextSlide() {
+    if (mediaAnnouncements.length === 0) return;
+    var nextIndex = (currentSlideIndex + 1) % mediaAnnouncements.length;
+
+    // If we've cycled through all slides, hide slideshow and show prayer times
+    if (nextIndex === 0) {
+      hideSlideshow();
+      // Schedule next slideshow cycle after showing prayer times for a while
+      if (slideshowCycleTimeout) clearTimeout(slideshowCycleTimeout);
+      slideshowCycleTimeout = setTimeout(function() {
+        if (mediaAnnouncements.length > 0) {
+          showSlideshowOverlay();
+        }
+      }, slideshowDuration * 1000 * 2); // Show prayer times for 2x the slide duration
+      return;
+    }
+
+    showSlide(nextIndex);
+  }
+
+  function showSlideshowOverlay() {
+    var overlay = document.getElementById('slideshow-overlay');
+    if (!overlay || mediaAnnouncements.length === 0) return;
+
+    slideshowActive = true;
+    overlay.className = 'slideshow-overlay active';
+    showSlide(0);
+
+    // Start cycling through slides
+    if (slideshowInterval) clearInterval(slideshowInterval);
+    slideshowInterval = setInterval(nextSlide, slideshowDuration * 1000);
+  }
+
+  function hideSlideshow() {
+    var overlay = document.getElementById('slideshow-overlay');
+    if (!overlay) return;
+
+    slideshowActive = false;
+    overlay.className = 'slideshow-overlay';
+
+    if (slideshowInterval) {
+      clearInterval(slideshowInterval);
+      slideshowInterval = null;
+    }
+
+    // Pause all videos
+    var videos = overlay.querySelectorAll('video');
+    for (var i = 0; i < videos.length; i++) {
+      try { videos[i].pause(); } catch (e) {}
+    }
+  }
+
+  function startSlideshowCycle() {
+    // Start the first slideshow cycle after a short delay
+    if (slideshowCycleTimeout) clearTimeout(slideshowCycleTimeout);
+    slideshowCycleTimeout = setTimeout(function() {
+      if (mediaAnnouncements.length > 0) {
+        showSlideshowOverlay();
+      }
+    }, 15000); // Wait 15 seconds after page load before first slideshow
+  }
+
+  function stopSlideshow() {
+    hideSlideshow();
+    if (slideshowCycleTimeout) {
+      clearTimeout(slideshowCycleTimeout);
+      slideshowCycleTimeout = null;
+    }
+    mediaAnnouncements = [];
   }
 
   function updateDisplay() {

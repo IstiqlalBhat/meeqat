@@ -11,6 +11,7 @@ CREATE TABLE IF NOT EXISTS masjids (
   longitude DOUBLE PRECISION,
   calculation_method INTEGER DEFAULT 2,
   image_url TEXT,
+  slideshow_duration INTEGER DEFAULT 10,
   firebase_uid TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
@@ -58,9 +59,16 @@ CREATE TABLE IF NOT EXISTS announcements (
   title TEXT NOT NULL,
   body TEXT,
   image_url TEXT,
+  video_url TEXT,
+  media_type TEXT DEFAULT 'text',
   active INTEGER DEFAULT 1,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- Migration for existing databases:
+-- ALTER TABLE announcements ADD COLUMN IF NOT EXISTS video_url TEXT;
+-- ALTER TABLE announcements ADD COLUMN IF NOT EXISTS media_type TEXT DEFAULT 'text';
+-- ALTER TABLE masjids ADD COLUMN IF NOT EXISTS slideshow_duration INTEGER DEFAULT 10;
 
 CREATE TABLE IF NOT EXISTS tv_devices (
   id SERIAL PRIMARY KEY,

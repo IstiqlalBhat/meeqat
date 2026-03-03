@@ -14,7 +14,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700;800;900&family=Amiri:wght@400;700&family=Inter:wght@300;400;500;600;700;800;900&family=Noto+Naskh+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/styles.css?v=9">
+  <link rel="stylesheet" href="css/styles.css?v=10">
 </head>
 <body>
   <!-- ============================================ -->
@@ -261,6 +261,12 @@
       </aside>
     </main>
 
+    <!-- Slideshow Overlay for Image/Video Announcements -->
+    <div id="slideshow-overlay" class="slideshow-overlay">
+      <div id="slideshow-container"></div>
+      <div id="slideshow-dots" class="slideshow-dots"></div>
+    </div>
+
     <!-- Bottom Announcement Ticker -->
     <footer class="ticker-bar">
       <div class="ticker-border-top"></div>
@@ -283,7 +289,7 @@
       if (typeof caches !== 'undefined') {
         caches.keys().then(function(keys) {
           keys.forEach(function(key) {
-            if (key.indexOf('v8') === -1) {
+            if (key.indexOf('v10') === -1) {
               console.log('Deleting old cache:', key);
               caches.delete(key);
             }
@@ -297,7 +303,7 @@
     })();
   </script>
   <!-- App Scripts -->
-  <script src="js/api.js?v=9"></script>
-  <script src="js/app.js?v=9"></script>
+  <script src="js/api.js?v=10"></script>
+  <script src="js/app.js?v=10"></script>
 </body>
 </html>

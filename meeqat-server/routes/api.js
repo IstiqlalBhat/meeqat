@@ -219,12 +219,22 @@ router.get('/masjids/:id/announcements', async (req, res) => {
 
   const { data: announcements } = await supabase
     .from('announcements')
-    .select('id, title, body, image_url, created_at')
+    .select('id, title, body, image_url, video_url, media_type, created_at')
     .eq('masjid_id', req.params.id)
     .eq('active', 1)
     .order('created_at', { ascending: false });
 
-  res.json({ announcements: announcements || [] });
+  // Also fetch slideshow_duration from the masjid
+  const { data: masjidSettings } = await supabase
+    .from('masjids')
+    .select('slideshow_duration')
+    .eq('id', req.params.id)
+    .single();
+
+  res.json({
+    announcements: announcements || [],
+    slideshow_duration: (masjidSettings && masjidSettings.slideshow_duration) || 10
+  });
 });
 
 // ============================================================
@@ -269,7 +279,7 @@ router.post('/tv/register', async (req, res) => {
 router.get('/tv/:deviceId/config', async (req, res) => {
   const { data: device, error } = await supabase
     .from('tv_devices')
-    .select('*, masjids(id, name, address, city, state, country, latitude, longitude, image_url, calculation_method)')
+    .select('*, masjids(id, name, address, city, state, country, latitude, longitude, image_url, calculation_method, slideshow_duration)')
     .eq('device_id', req.params.deviceId)
     .maybeSingle();
 

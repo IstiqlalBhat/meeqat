@@ -3,8 +3,8 @@
    Offline-first caching strategy
    ============================================ */
 
-const STATIC_CACHE = 'meeqat-tv-static-v9';
-const DATA_CACHE = 'meeqat-tv-data-v9';
+const STATIC_CACHE = 'meeqat-tv-static-v10';
+const DATA_CACHE = 'meeqat-tv-data-v10';
 
 // Static assets to precache
 const STATIC_ASSETS = [
@@ -68,7 +68,7 @@ async function networkFirstWithCache(request) {
       cache.put(request, response.clone());
     }
     return response;
-  } catch {
+  } catch (e) {
     const cached = await caches.match(request);
     if (cached) return cached;
     return new Response(JSON.stringify({ error: 'Offline', cached: false }), {

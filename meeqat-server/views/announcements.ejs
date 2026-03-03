@@ -15,14 +15,62 @@
         <p class="text-muted text-sm mt-1"><%= masjid.name %></p>
       </div>
 
+      <!-- Slideshow Duration Setting -->
+      <div class="bg-white rounded-2xl shadow-sm border border-cream-200 p-4 sm:p-6 mb-6">
+        <h3 class="text-sm font-semibold text-charcoal mb-3 flex items-center gap-2">
+          <svg class="w-4 h-4 text-sage-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          TV Slideshow Settings
+        </h3>
+        <p class="text-xs text-muted mb-3">Image and video announcements will display as a fullscreen slideshow on paired TV displays.</p>
+        <form method="POST" action="/admin/slideshow-settings" class="flex flex-col sm:flex-row items-start sm:items-end gap-3">
+          <div>
+            <label class="block text-xs font-medium text-muted mb-1.5 uppercase tracking-wider">Duration per slide (seconds)</label>
+            <input type="number" name="slideshow_duration" value="<%= masjid.slideshow_duration || 10 %>" min="3" max="120" step="1"
+              class="w-32 px-4 py-2.5 rounded-xl border border-cream-200 bg-cream-50 text-charcoal focus:outline-none focus:ring-2 focus:ring-gold-400 text-sm">
+          </div>
+          <button type="submit"
+            class="bg-cream-100 text-charcoal font-medium px-4 py-2.5 rounded-xl hover:bg-cream-200 transition-all text-sm">
+            Save
+          </button>
+        </form>
+      </div>
+
       <!-- New announcement form -->
       <div class="bg-white rounded-2xl shadow-sm border border-cream-200 p-4 sm:p-6 mb-6">
         <h3 class="text-sm font-semibold text-charcoal mb-4 flex items-center gap-2">
           <svg class="w-4 h-4 text-sage-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
           New Announcement
         </h3>
-        <form method="POST" action="/admin/announcements" enctype="multipart/form-data">
+        <form method="POST" action="/admin/announcements" enctype="multipart/form-data" id="announcement-form">
           <div class="space-y-4">
+            <!-- Media Type Selector -->
+            <div>
+              <label class="block text-xs font-medium text-muted mb-1.5 uppercase tracking-wider">Type</label>
+              <div class="flex gap-2">
+                <label class="flex-1 cursor-pointer">
+                  <input type="radio" name="media_type" value="text" checked class="hidden peer">
+                  <div class="peer-checked:border-sage-400 peer-checked:bg-sage-400/10 border border-cream-200 rounded-xl px-3 py-2 text-center text-sm transition-all hover:border-sage-300">
+                    <svg class="w-4 h-4 mx-auto mb-1 text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7"/></svg>
+                    Text
+                  </div>
+                </label>
+                <label class="flex-1 cursor-pointer">
+                  <input type="radio" name="media_type" value="image" class="hidden peer">
+                  <div class="peer-checked:border-sage-400 peer-checked:bg-sage-400/10 border border-cream-200 rounded-xl px-3 py-2 text-center text-sm transition-all hover:border-sage-300">
+                    <svg class="w-4 h-4 mx-auto mb-1 text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                    Image
+                  </div>
+                </label>
+                <label class="flex-1 cursor-pointer">
+                  <input type="radio" name="media_type" value="video" class="hidden peer">
+                  <div class="peer-checked:border-sage-400 peer-checked:bg-sage-400/10 border border-cream-200 rounded-xl px-3 py-2 text-center text-sm transition-all hover:border-sage-300">
+                    <svg class="w-4 h-4 mx-auto mb-1 text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                    Video
+                  </div>
+                </label>
+              </div>
+            </div>
+
             <div>
               <input type="text" name="title" required placeholder="Announcement title"
                 class="w-full px-4 py-3 rounded-xl border border-cream-200 bg-cream-50 text-charcoal focus:outline-none focus:ring-2 focus:ring-gold-400 text-sm"
@@ -32,15 +80,26 @@
               <textarea name="body" rows="3" placeholder="Details (optional)"
                 class="w-full px-4 py-3 rounded-xl border border-cream-200 bg-cream-50 text-charcoal focus:outline-none focus:ring-2 focus:ring-gold-400 text-sm resize-none"></textarea>
             </div>
-            <div>
-              <label class="block text-xs font-medium text-muted mb-1.5 uppercase tracking-wider">Attach Image (optional)</label>
+
+            <!-- Image upload (shown for text and image types) -->
+            <div id="image-upload-section">
+              <label class="block text-xs font-medium text-muted mb-1.5 uppercase tracking-wider">Attach Image <span id="image-optional">(optional)</span></label>
               <label class="block cursor-pointer">
                 <div class="border border-dashed border-cream-200 rounded-xl px-4 py-3 flex items-center gap-3 hover:border-gold-400 hover:bg-gold-400/5 transition-all">
                   <svg class="w-5 h-5 text-muted shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
                   <span class="text-sm text-muted" id="ann-file-name">Choose image...</span>
                 </div>
-                <input type="file" name="image" accept="image/*" class="hidden" onchange="document.getElementById('ann-file-name').textContent = this.files[0]?.name || 'Choose image...'">
+                <input type="file" name="image" accept="image/*" class="hidden" onchange="document.getElementById('ann-file-name').textContent = this.files[0] ? this.files[0].name : 'Choose image...'">
               </label>
+              <p class="text-xs text-muted mt-1">For best results on TV, use 1920x1080 (HD) images</p>
+            </div>
+
+            <!-- Video URL (shown for video type) -->
+            <div id="video-upload-section" style="display: none;">
+              <label class="block text-xs font-medium text-muted mb-1.5 uppercase tracking-wider">Video URL</label>
+              <input type="url" name="video_url" placeholder="https://example.com/video.mp4"
+                class="w-full px-4 py-3 rounded-xl border border-cream-200 bg-cream-50 text-charcoal focus:outline-none focus:ring-2 focus:ring-gold-400 text-sm">
+              <p class="text-xs text-muted mt-1">Direct link to MP4 video file. For best results, use 1080p resolution.</p>
             </div>
           </div>
           <button type="submit"
@@ -80,9 +139,17 @@
                           <%= ann.active ? 'bg-sage-400/10 text-sage-500' : 'bg-cream-200 text-muted' %>">
                           <%= ann.active ? 'Active' : 'Inactive' %>
                         </span>
+                        <% if (ann.media_type && ann.media_type !== 'text') { %>
+                          <span class="text-[10px] px-2 py-0.5 rounded-full font-medium bg-blue-50 text-blue-500">
+                            <%= ann.media_type === 'image' ? 'Image Slide' : 'Video Slide' %>
+                          </span>
+                        <% } %>
                       </div>
                       <% if (ann.body) { %>
                         <p class="text-sm text-muted mt-1 line-clamp-2"><%= ann.body %></p>
+                      <% } %>
+                      <% if (ann.video_url) { %>
+                        <p class="text-xs text-blue-500 mt-1 truncate"><%= ann.video_url %></p>
                       <% } %>
                       <p class="text-xs text-muted mt-2 flex items-center gap-1">
                         <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
@@ -113,8 +180,34 @@
 </main>
 <script src="/js/direct-upload.js"></script>
 <script>
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', function() {
   setupDirectUpload(document.querySelector('form[action="/admin/announcements"]'), 'image', 'announcements');
+
+  // Toggle media type sections
+  var radios = document.querySelectorAll('input[name="media_type"]');
+  var imageSection = document.getElementById('image-upload-section');
+  var videoSection = document.getElementById('video-upload-section');
+  var imageOptional = document.getElementById('image-optional');
+
+  function updateSections() {
+    var selected = document.querySelector('input[name="media_type"]:checked');
+    if (!selected) return;
+    var val = selected.value;
+
+    if (val === 'video') {
+      imageSection.style.display = 'none';
+      videoSection.style.display = 'block';
+    } else {
+      imageSection.style.display = 'block';
+      videoSection.style.display = 'none';
+      imageOptional.textContent = val === 'image' ? '(required for TV slideshow)' : '(optional)';
+    }
+  }
+
+  for (var i = 0; i < radios.length; i++) {
+    radios[i].addEventListener('change', updateSections);
+  }
+  updateSections();
 });
 </script>
 </body>

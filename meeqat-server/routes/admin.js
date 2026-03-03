@@ -601,8 +601,22 @@ router.get('/announcements', requireMasjid, async (req, res) => {
   res.render('announcements', { masjid: req.masjid, announcements: announcements || [] });
 });
 
+// Save slideshow duration setting
+router.post('/slideshow-settings', requireMasjid, async (req, res) => {
+  const { slideshow_duration } = req.body;
+  const duration = parseInt(slideshow_duration) || 10;
+
+  await supabase.from('masjids').update({
+    slideshow_duration: Math.max(3, Math.min(120, duration)),
+    updated_at: new Date().toISOString()
+  }).eq('id', req.masjid.id);
+
+  req.session.flash = { type: 'success', message: 'Slideshow duration updated' };
+  res.redirect('/admin/announcements');
+});
+
 router.post('/announcements', requireMasjid, upload.single('image'), async (req, res) => {
-  const { title, body } = req.body;
+  const { title, body, media_type, video_url } = req.body;
 
   if (title && title.trim()) {
     let image_url = null;
@@ -612,11 +626,20 @@ router.post('/announcements', requireMasjid, upload.single('image'), async (req,
       image_url = await uploadImage(req.file, req.masjid.id, 'announcements');
     }
 
+    const announcementType = media_type || 'text';
+    // If media_type is 'image' and there's an image_url, or if media_type is 'video' and there's a video_url
+    // Default to 'text' if no media provided
+    let finalType = announcementType;
+    if (finalType === 'image' && !image_url) finalType = 'text';
+    if (finalType === 'video' && !video_url) finalType = 'text';
+
     await supabase.from('announcements').insert({
       masjid_id: req.masjid.id,
       title: title.trim(),
       body: body || null,
-      image_url
+      image_url,
+      video_url: video_url || null,
+      media_type: finalType
     });
 
     req.session.flash = { type: 'success', message: 'Announcement posted' };
@@ -652,13 +675,21 @@ router.post('/announcements/:id/delete', requireMasjid, async (req, res) => {
     .single();
 
   if (ann) {
-    // Delete announcement image from storage if it exists
+    // Delete announcement media from storage if it exists
     if (ann.image_url) {
       try {
         const filePath = extractFilePath(ann.image_url);
         if (filePath) await bucket.file(filePath).delete();
       } catch (err) {
         console.error('Image delete error:', err.message);
+      }
+    }
+    if (ann.video_url) {
+      try {
+        const filePath = extractFilePath(ann.video_url);
+        if (filePath) await bucket.file(filePath).delete();
+      } catch (err) {
+        console.error('Video delete error:', err.message);
       }
     }
     await supabase.from('announcements').delete().eq('id', ann.id);
