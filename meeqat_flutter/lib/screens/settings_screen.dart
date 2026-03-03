@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:mobile_scanner/mobile_scanner.dart';
 import '../models/prayer_time.dart';
 import '../services/prayer_provider.dart';
 import '../services/backend_service.dart';
@@ -267,7 +266,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           Text('Sync to TV', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: cs.onSurface)),
                           const SizedBox(height: 2),
                           Text(
-                            'Scan QR code on your TV display',
+                            'Enter the code shown on your TV',
                             style: TextStyle(fontSize: 12, color: cs.hintText),
                           ),
                         ],
@@ -282,9 +281,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.qr_code_scanner_rounded, size: 16, color: cs.duckDarkAccent),
+                          Icon(Icons.link_rounded, size: 16, color: cs.duckDarkAccent),
                           const SizedBox(width: 6),
-                          Text('Scan', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: cs.duckDarkAccent)),
+                          Text('Pair', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: cs.duckDarkAccent)),
                         ],
                       ),
                     ),
@@ -331,7 +330,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   void _openTvScanner(PrayerProvider provider) {
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (_) => _TvScannerScreen(
+        builder: (_) => _TvPairScreen(
           backendUrl: provider.backendUrl,
           masjidId: provider.selectedMasjidId,
           masjidName: provider.selectedMasjidName,
@@ -573,138 +572,133 @@ class _SettingsScreenState extends State<SettingsScreen> {
 }
 
 // ─────────────────────────────────────────────────────────────
-// TV QR Scanner Screen
+// TV Pair Code Entry Screen
 // ─────────────────────────────────────────────────────────────
 
-class _TvScannerScreen extends StatefulWidget {
+class _TvPairScreen extends StatefulWidget {
   final String backendUrl;
   final int masjidId;
   final String masjidName;
 
-  const _TvScannerScreen({
+  const _TvPairScreen({
     required this.backendUrl,
     required this.masjidId,
     required this.masjidName,
   });
 
   @override
-  State<_TvScannerScreen> createState() => _TvScannerScreenState();
+  State<_TvPairScreen> createState() => _TvPairScreenState();
 }
 
-class _TvScannerScreenState extends State<_TvScannerScreen> {
-  final MobileScannerController _scannerController = MobileScannerController(
-    detectionSpeed: DetectionSpeed.normal,
-    facing: CameraFacing.back,
-  );
-  bool _isProcessing = false;
-  bool _isPaired = false;
+enum _PairState { idle, loading, success, error }
+
+class _TvPairScreenState extends State<_TvPairScreen> {
+  static const _codeLength = 6;
+  final List<TextEditingController> _controllers =
+      List.generate(_codeLength, (_) => TextEditingController());
+  final List<FocusNode> _focusNodes =
+      List.generate(_codeLength, (_) => FocusNode());
+
+  _PairState _state = _PairState.idle;
   String? _errorMessage;
 
   @override
+  void initState() {
+    super.initState();
+    // Auto-focus the first digit
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _focusNodes[0].requestFocus();
+    });
+  }
+
+  @override
   void dispose() {
-    _scannerController.dispose();
+    for (final c in _controllers) {
+      c.dispose();
+    }
+    for (final f in _focusNodes) {
+      f.dispose();
+    }
     super.dispose();
   }
 
-  /// Extract pair code and optional backend URL from QR value like:
-  /// "https://server/api/tv/pair?code=123456"
-  ({String code, String? backendUrl})? _extractPairInfo(String rawValue) {
-    try {
-      // Handle if QR just contains a 6-digit code directly
-      if (RegExp(r'^\d{6}$').hasMatch(rawValue.trim())) {
-        return (code: rawValue.trim(), backendUrl: null);
+  String get _code => _controllers.map((c) => c.text).join();
+
+  void _onDigitChanged(int index, String value) {
+    if (_state == _PairState.loading || _state == _PairState.success) return;
+
+    // Clear error on new input
+    if (_state == _PairState.error) {
+      setState(() {
+        _state = _PairState.idle;
+        _errorMessage = null;
+      });
+    }
+
+    if (value.length > 1) {
+      // Handle paste — distribute digits across fields
+      final digits = value.replaceAll(RegExp(r'[^0-9]'), '');
+      for (int i = 0; i < _codeLength; i++) {
+        final d = (index + i) < digits.length ? digits[index + i] : (i <= index ? _controllers[i].text : '');
+        _controllers[i].text = i < digits.length ? digits[i] : _controllers[i].text;
       }
-
-      final uri = Uri.parse(rawValue);
-      final code = uri.queryParameters['code'];
-      if (code != null && code.length == 6) {
-        // Extract backend URL from the QR URL (scheme + host)
-        final backendUrl = '${uri.scheme}://${uri.host}${uri.hasPort ? ':${uri.port}' : ''}';
-        return (code: code, backendUrl: backendUrl);
-      }
-    } catch (_) {}
-    return null;
-  }
-
-  Future<void> _handleBarcode(BarcodeCapture capture) async {
-    if (_isProcessing || _isPaired) return;
-
-    final barcode = capture.barcodes.firstOrNull;
-    if (barcode == null || barcode.rawValue == null) return;
-
-    debugPrint('QR scanned: ${barcode.rawValue}');
-
-    final pairInfo = _extractPairInfo(barcode.rawValue!);
-    if (pairInfo == null) {
-      setState(() => _errorMessage = 'Invalid QR code. Please scan the code on the TV display.');
+      final lastIdx = (digits.length - 1).clamp(0, _codeLength - 1);
+      _focusNodes[lastIdx].requestFocus();
+      _controllers[lastIdx].selection = TextSelection.fromPosition(
+        TextPosition(offset: _controllers[lastIdx].text.length),
+      );
+      if (_code.length == _codeLength) _submit();
       return;
     }
 
-    await _pairWithCode(pairInfo.code, pairInfo.backendUrl);
+    if (value.isNotEmpty && index < _codeLength - 1) {
+      // Advance to next field
+      _focusNodes[index + 1].requestFocus();
+    }
+
+    if (value.isNotEmpty && index == _codeLength - 1 && _code.length == _codeLength) {
+      _submit();
+    }
   }
 
-  Future<void> _pairWithCode(String code, [String? backendUrlOverride]) async {
+  void _onKeyEvent(int index, KeyEvent event) {
+    if (event is KeyDownEvent &&
+        event.logicalKey.keyLabel == 'Backspace' &&
+        _controllers[index].text.isEmpty &&
+        index > 0) {
+      _controllers[index - 1].clear();
+      _focusNodes[index - 1].requestFocus();
+    }
+  }
+
+  Future<void> _submit() async {
+    final code = _code;
+    if (code.length != _codeLength) return;
+
+    FocusScope.of(context).unfocus();
     setState(() {
-      _isProcessing = true;
+      _state = _PairState.loading;
       _errorMessage = null;
     });
 
     try {
-      final baseUrl = backendUrlOverride ?? widget.backendUrl;
-      final service = BackendService(baseUrl: baseUrl);
+      final service = BackendService(baseUrl: widget.backendUrl);
       await service.pairTvDevice(code, widget.masjidId);
 
       if (!mounted) return;
-      setState(() {
-        _isPaired = true;
-        _isProcessing = false;
-      });
+      setState(() => _state = _PairState.success);
 
       await Future.delayed(const Duration(seconds: 2));
       if (mounted) Navigator.of(context).pop();
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _isProcessing = false;
+        _state = _PairState.error;
         _errorMessage = e.toString().replaceFirst('Exception: ', '');
       });
+      // Re-focus last field so user can retry
+      _focusNodes[_codeLength - 1].requestFocus();
     }
-  }
-
-  void _showManualCodeDialog() {
-    final controller = TextEditingController();
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Enter Pair Code'),
-        content: TextField(
-          controller: controller,
-          keyboardType: TextInputType.number,
-          maxLength: 6,
-          autofocus: true,
-          decoration: const InputDecoration(
-            hintText: '6-digit code from TV',
-            border: OutlineInputBorder(),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () {
-              final code = controller.text.trim();
-              if (RegExp(r'^\d{6}$').hasMatch(code)) {
-                Navigator.pop(ctx);
-                _pairWithCode(code);
-              }
-            },
-            child: const Text('Pair'),
-          ),
-        ],
-      ),
-    );
   }
 
   @override
@@ -712,232 +706,183 @@ class _TvScannerScreenState extends State<_TvScannerScreen> {
     final cs = Theme.of(context).colorScheme;
 
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: cs.surface,
       appBar: AppBar(
-        backgroundColor: Colors.black,
-        foregroundColor: Colors.white,
-        title: const Text('Scan TV Display', style: TextStyle(fontWeight: FontWeight.w600)),
+        backgroundColor: cs.surface,
+        foregroundColor: cs.onSurface,
+        title: const Text('Pair TV Display', style: TextStyle(fontWeight: FontWeight.w600)),
         centerTitle: true,
         elevation: 0,
       ),
-      body: Stack(
-        children: [
-          // Camera
-          MobileScanner(
-            controller: _scannerController,
-            onDetect: _handleBarcode,
-          ),
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 28),
+          child: Column(
+            children: [
+              const Spacer(flex: 2),
 
-          // Overlay with cutout
-          _buildScanOverlay(cs),
+              // TV icon
+              Container(
+                width: 72,
+                height: 72,
+                decoration: BoxDecoration(
+                  color: cs.goldAccent.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(22),
+                ),
+                child: Icon(Icons.tv_rounded, size: 36, color: cs.goldAccent),
+              ),
+              const SizedBox(height: 20),
 
-          // Bottom info panel
-          Positioned(
-            left: 0, right: 0, bottom: 0,
-            child: Container(
-              padding: const EdgeInsets.fromLTRB(24, 24, 24, 48),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [Colors.transparent, Colors.black.withValues(alpha: 0.9), Colors.black],
+              // Instruction
+              Text(
+                'Enter the 6-digit code\nshown on your TV',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                  color: cs.onSurface,
+                  height: 1.4,
                 ),
               ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (_isPaired) ...[
-                    const Icon(Icons.check_circle_rounded, color: Color(0xFF4CAF50), size: 56),
-                    const SizedBox(height: 12),
-                    const Text(
-                      'TV Display Paired!',
-                      style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w700),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Connected to ${widget.masjidName}',
-                      style: TextStyle(color: Colors.white.withValues(alpha: 0.7), fontSize: 14),
-                    ),
-                  ] else if (_isProcessing) ...[
-                    const SizedBox(
-                      width: 40, height: 40,
-                      child: CircularProgressIndicator(color: Color(0xFFC9A84C), strokeWidth: 3),
-                    ),
-                    const SizedBox(height: 12),
-                    const Text(
-                      'Pairing...',
-                      style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600),
-                    ),
-                  ] else ...[
-                    Text(
-                      'Point your camera at the QR code\non the TV display',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(color: Colors.white.withValues(alpha: 0.9), fontSize: 16, fontWeight: FontWeight.w500),
-                    ),
-                    const SizedBox(height: 12),
-                    TextButton.icon(
-                      onPressed: _showManualCodeDialog,
-                      icon: const Icon(Icons.keyboard, size: 18),
-                      label: const Text('Enter code manually'),
-                      style: TextButton.styleFrom(
-                        foregroundColor: const Color(0xFFC9A84C),
+              const SizedBox(height: 36),
+
+              // Digit input boxes
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: List.generate(_codeLength, (i) {
+                  final isFilled = _controllers[i].text.isNotEmpty;
+                  final isFocused = _focusNodes[i].hasFocus;
+
+                  return Padding(
+                    padding: EdgeInsets.only(left: i > 0 ? 10 : 0),
+                    child: SizedBox(
+                      width: 48,
+                      height: 60,
+                      child: KeyboardListener(
+                        focusNode: FocusNode(),
+                        onKeyEvent: (event) => _onKeyEvent(i, event),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 150),
+                          decoration: BoxDecoration(
+                            color: _state == _PairState.success
+                                ? const Color(0xFF4CAF50).withValues(alpha: 0.1)
+                                : _state == _PairState.error
+                                    ? Colors.red.withValues(alpha: 0.06)
+                                    : isFocused
+                                        ? cs.goldAccent.withValues(alpha: 0.08)
+                                        : cs.onSurface.withValues(alpha: 0.04),
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(
+                              color: _state == _PairState.success
+                                  ? const Color(0xFF4CAF50).withValues(alpha: 0.5)
+                                  : _state == _PairState.error
+                                      ? Colors.red.withValues(alpha: 0.4)
+                                      : isFocused
+                                          ? cs.goldAccent.withValues(alpha: 0.6)
+                                          : cs.outline,
+                              width: isFocused ? 2 : 1.5,
+                            ),
+                          ),
+                          child: TextField(
+                            controller: _controllers[i],
+                            focusNode: _focusNodes[i],
+                            onChanged: (v) => _onDigitChanged(i, v),
+                            enabled: _state != _PairState.loading && _state != _PairState.success,
+                            textAlign: TextAlign.center,
+                            keyboardType: TextInputType.number,
+                            maxLength: 1,
+                            style: TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.w800,
+                              color: _state == _PairState.success
+                                  ? const Color(0xFF4CAF50)
+                                  : isFilled
+                                      ? cs.onSurface
+                                      : cs.hintText,
+                            ),
+                            decoration: const InputDecoration(
+                              counterText: '',
+                              border: InputBorder.none,
+                              contentPadding: EdgeInsets.zero,
+                            ),
+                          ),
+                        ),
                       ),
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Syncing with: ${widget.masjidName}',
-                      style: TextStyle(color: const Color(0xFFC9A84C).withValues(alpha: 0.8), fontSize: 13),
-                    ),
-                    if (_errorMessage != null) ...[
-                      const SizedBox(height: 12),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                        decoration: BoxDecoration(
-                          color: Colors.red.withValues(alpha: 0.15),
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: Colors.red.withValues(alpha: 0.3)),
-                        ),
-                        child: Text(
-                          _errorMessage!,
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(color: Colors.redAccent, fontSize: 13),
-                        ),
-                      ),
-                    ],
-                  ],
-                ],
+                  );
+                }),
               ),
-            ),
+
+              const SizedBox(height: 28),
+
+              // State feedback
+              AnimatedSwitcher(
+                duration: const Duration(milliseconds: 250),
+                child: _buildStateFeedback(cs),
+              ),
+
+              const SizedBox(height: 20),
+
+              // Masjid name
+              Text(
+                'Syncing with: ${widget.masjidName}',
+                style: TextStyle(
+                  fontSize: 13,
+                  color: cs.goldAccent.withValues(alpha: 0.8),
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+
+              const Spacer(flex: 3),
+            ],
           ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildScanOverlay(ColorScheme cs) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final scanSize = constraints.maxWidth * 0.65;
-        final left = (constraints.maxWidth - scanSize) / 2;
-        final top = (constraints.maxHeight - scanSize) / 2 - 40;
-
-        return Stack(
-          children: [
-            // Dark overlay with transparent cutout
-            ColorFiltered(
-              colorFilter: ColorFilter.mode(
-                Colors.black.withValues(alpha: 0.55),
-                BlendMode.srcOut,
-              ),
-              child: Stack(
-                children: [
-                  Container(
-                    decoration: const BoxDecoration(
-                      color: Colors.black,
-                      backgroundBlendMode: BlendMode.dstOut,
-                    ),
-                  ),
-                  Positioned(
-                    left: left,
-                    top: top,
-                    child: Container(
-                      width: scanSize,
-                      height: scanSize,
-                      decoration: BoxDecoration(
-                        color: Colors.red, // Any color works with srcOut
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            // Corner brackets
-            Positioned(
-              left: left - 2,
-              top: top - 2,
-              child: _cornerBracket(topLeft: true),
-            ),
-            Positioned(
-              right: left - 2,
-              top: top - 2,
-              child: _cornerBracket(topRight: true),
-            ),
-            Positioned(
-              left: left - 2,
-              bottom: constraints.maxHeight - top - scanSize - 2,
-              child: _cornerBracket(bottomLeft: true),
-            ),
-            Positioned(
-              right: left - 2,
-              bottom: constraints.maxHeight - top - scanSize - 2,
-              child: _cornerBracket(bottomRight: true),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  Widget _cornerBracket({
-    bool topLeft = false,
-    bool topRight = false,
-    bool bottomLeft = false,
-    bool bottomRight = false,
-  }) {
-    return SizedBox(
-      width: 36,
-      height: 36,
-      child: CustomPaint(
-        painter: _CornerPainter(
-          topLeft: topLeft,
-          topRight: topRight,
-          bottomLeft: bottomLeft,
-          bottomRight: bottomRight,
         ),
       ),
     );
   }
-}
 
-class _CornerPainter extends CustomPainter {
-  final bool topLeft, topRight, bottomLeft, bottomRight;
-
-  _CornerPainter({
-    this.topLeft = false,
-    this.topRight = false,
-    this.bottomLeft = false,
-    this.bottomRight = false,
-  });
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = const Color(0xFFC9A84C)
-      ..strokeWidth = 3.5
-      ..style = PaintingStyle.stroke
-      ..strokeCap = StrokeCap.round;
-
-    const len = 28.0;
-
-    if (topLeft) {
-      canvas.drawLine(const Offset(0, len), Offset.zero, paint);
-      canvas.drawLine(Offset.zero, const Offset(len, 0), paint);
-    }
-    if (topRight) {
-      canvas.drawLine(Offset(size.width - len, 0), Offset(size.width, 0), paint);
-      canvas.drawLine(Offset(size.width, 0), Offset(size.width, len), paint);
-    }
-    if (bottomLeft) {
-      canvas.drawLine(Offset(0, size.height - len), Offset(0, size.height), paint);
-      canvas.drawLine(Offset(0, size.height), Offset(len, size.height), paint);
-    }
-    if (bottomRight) {
-      canvas.drawLine(Offset(size.width, size.height - len), Offset(size.width, size.height), paint);
-      canvas.drawLine(Offset(size.width - len, size.height), Offset(size.width, size.height), paint);
+  Widget _buildStateFeedback(ColorScheme cs) {
+    switch (_state) {
+      case _PairState.loading:
+        return const SizedBox(
+          key: ValueKey('loading'),
+          width: 28,
+          height: 28,
+          child: CircularProgressIndicator(color: Color(0xFFC9A84C), strokeWidth: 2.5),
+        );
+      case _PairState.success:
+        return Column(
+          key: const ValueKey('success'),
+          children: [
+            const Icon(Icons.check_circle_rounded, color: Color(0xFF4CAF50), size: 44),
+            const SizedBox(height: 8),
+            Text(
+              'TV Display Paired!',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                color: cs.onSurface,
+              ),
+            ),
+          ],
+        );
+      case _PairState.error:
+        return Container(
+          key: const ValueKey('error'),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          decoration: BoxDecoration(
+            color: Colors.red.withValues(alpha: 0.08),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.red.withValues(alpha: 0.2)),
+          ),
+          child: Text(
+            _errorMessage ?? 'Pairing failed. Please try again.',
+            textAlign: TextAlign.center,
+            style: const TextStyle(color: Colors.redAccent, fontSize: 13),
+          ),
+        );
+      case _PairState.idle:
+        return const SizedBox.shrink(key: ValueKey('idle'));
     }
   }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

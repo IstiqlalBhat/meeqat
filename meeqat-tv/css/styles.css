@@ -1,7 +1,7 @@
 /* ============================================
    MEEQAT TV - Prayer Times Display
-   Ornate Islamic Design System
-   Target: 1920x1080 (Full HD TV)
+   Premium Islamic Design System
+   Fluid scaling: 1rem = 10px at 1920×1080
    ============================================ */
 
 *, *::before, *::after {
@@ -11,6 +11,7 @@
 }
 
 :root {
+  /* Wood palette */
   --wood-dark: #1a0e08;
   --wood-deep: #2c1810;
   --wood-mid: #4a2c1a;
@@ -18,31 +19,45 @@
   --wood-warm: #8b5a3c;
   --wood-grain: #3d2215;
 
+  /* Gold palette */
   --gold-dark: #7a5c10;
   --gold-mid: #c9a84c;
   --gold-light: #e8d48b;
   --gold-bright: #ffd700;
   --gold-pale: #fff5d4;
 
+  /* Neutrals */
   --cream: #f5e6c8;
   --cream-light: #faf3e6;
 
+  /* Glass */
   --glass-bg: rgba(255, 255, 255, 0.05);
   --glass-bg-hover: rgba(255, 255, 255, 0.08);
   --glass-border: rgba(201, 168, 76, 0.15);
 
+  /* Text */
   --text-primary: #f5e6c8;
   --text-muted: rgba(245, 230, 200, 0.6);
   --text-gold: #e8d48b;
 
+  /* Fonts */
   --font-display: 'Playfair Display', Georgia, serif;
   --font-body: 'Inter', -apple-system, sans-serif;
   --font-arabic: 'Noto Naskh Arabic', 'Amiri', serif;
 }
 
+/* ============================================
+   FLUID SCALING
+   1rem = 10px at 1920×1080
+   Picks the smaller of width-based or height-based
+   ============================================ */
+html {
+  font-size: min(calc(100vw / 192), calc(100vh / 108));
+}
+
 html, body {
-  width: 1920px;
-  height: 1080px;
+  width: 100vw;
+  height: 100vh;
   overflow: hidden;
   font-family: var(--font-body);
   background: #0d0704;
@@ -52,11 +67,14 @@ html, body {
   user-select: none;
 }
 
+/* ============================================
+   SCREENS
+   ============================================ */
 .screen {
   position: absolute;
   inset: 0;
-  width: 1920px;
-  height: 1080px;
+  width: 100%;
+  height: 100%;
   opacity: 0;
   visibility: hidden;
   transition: opacity 1s ease, visibility 1s ease;
@@ -74,10 +92,19 @@ html, body {
   align-items: center;
   justify-content: center;
   background:
-    radial-gradient(ellipse at center, rgba(201, 168, 76, 0.06) 0%, transparent 60%),
-    radial-gradient(ellipse at 30% 70%, rgba(74, 44, 26, 0.3) 0%, transparent 50%),
-    radial-gradient(ellipse at 70% 30%, rgba(74, 44, 26, 0.2) 0%, transparent 50%),
+    radial-gradient(ellipse at center, rgba(201, 168, 76, 0.08) 0%, transparent 55%),
+    radial-gradient(ellipse at 30% 70%, rgba(74, 44, 26, 0.35) 0%, transparent 50%),
+    radial-gradient(ellipse at 70% 30%, rgba(74, 44, 26, 0.25) 0%, transparent 50%),
     linear-gradient(180deg, #0d0704 0%, #1a0e08 50%, #0d0704 100%);
+}
+
+.pairing-bg {
+  position: absolute;
+  inset: 0;
+  background:
+    repeating-linear-gradient(88deg, transparent, transparent 0.1rem, rgba(139, 90, 60, 0.015) 0.1rem, rgba(139, 90, 60, 0.015) 0.2rem),
+    repeating-linear-gradient(91deg, transparent, transparent 0.2rem, rgba(60, 34, 14, 0.02) 0.2rem, rgba(60, 34, 14, 0.02) 0.3rem);
+  opacity: 0.6;
 }
 
 .pairing-container {
@@ -90,84 +117,93 @@ html, body {
 
 .pairing-ornament {
   position: absolute;
-  width: 140px;
-  height: 140px;
+  width: 14rem;
+  height: 14rem;
   border-color: var(--gold-mid);
   border-style: solid;
   opacity: 0.25;
 }
-.pairing-ornament.top-left     { top: -280px; left: -400px; border-width: 2px 0 0 2px; }
-.pairing-ornament.top-right    { top: -280px; right: -400px; border-width: 2px 2px 0 0; }
-.pairing-ornament.bottom-left  { bottom: -200px; left: -400px; border-width: 0 0 2px 2px; }
-.pairing-ornament.bottom-right { bottom: -200px; right: -400px; border-width: 0 2px 2px 0; }
+.pairing-ornament.top-left     { top: -28rem; left: -40rem; border-width: 0.2rem 0 0 0.2rem; }
+.pairing-ornament.top-right    { top: -28rem; right: -40rem; border-width: 0.2rem 0.2rem 0 0; }
+.pairing-ornament.bottom-left  { bottom: -20rem; left: -40rem; border-width: 0 0 0.2rem 0.2rem; }
+.pairing-ornament.bottom-right { bottom: -20rem; right: -40rem; border-width: 0 0.2rem 0.2rem 0; }
 
 .pairing-header {
   text-align: center;
-  margin-bottom: 48px;
+  margin-bottom: 4.8rem;
 }
 
 .pairing-bismillah {
   font-family: var(--font-arabic);
-  font-size: 56px;
+  font-size: 5.6rem;
   color: var(--gold-mid);
-  margin-bottom: 12px;
-  text-shadow: 0 0 40px rgba(201, 168, 76, 0.2);
+  margin-bottom: 1.2rem;
+  text-shadow: 0 0 4rem rgba(201, 168, 76, 0.25);
 }
 
 .pairing-title {
   font-family: var(--font-display);
-  font-size: 80px;
+  font-size: 8rem;
   font-weight: 900;
-  letter-spacing: 10px;
-  background: linear-gradient(180deg, var(--gold-light) 0%, var(--gold-mid) 60%, var(--gold-dark) 100%);
+  letter-spacing: 1rem;
+  background: linear-gradient(180deg, var(--gold-pale) 0%, var(--gold-light) 30%, var(--gold-mid) 70%, var(--gold-dark) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
+  background-clip: text;
   text-transform: uppercase;
+  filter: drop-shadow(0 0.2rem 0.4rem rgba(0, 0, 0, 0.4));
 }
 
 .pairing-subtitle {
-  font-size: 18px;
-  letter-spacing: 14px;
+  font-size: 1.8rem;
+  letter-spacing: 1.4rem;
   text-transform: uppercase;
   color: var(--text-muted);
-  margin-top: 8px;
+  margin-top: 0.8rem;
+}
+
+.pairing-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .pairing-instruction {
-  font-size: 22px;
+  font-size: 2.2rem;
   color: var(--text-muted);
-  margin-bottom: 40px;
+  margin-bottom: 4rem;
   font-weight: 300;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.05rem;
 }
 
 .qr-frame {
   position: relative;
   display: inline-block;
-  padding: 28px;
+  padding: 2.8rem;
   background: #fffef8;
-  border-radius: 16px;
+  border-radius: 1.6rem;
   box-shadow:
-    0 0 80px rgba(201, 168, 76, 0.1),
-    0 20px 80px rgba(0, 0, 0, 0.6),
-    inset 0 0 0 1px rgba(201, 168, 76, 0.1);
+    0 0 8rem rgba(201, 168, 76, 0.12),
+    0 2rem 8rem rgba(0, 0, 0, 0.6),
+    inset 0 0 0 0.1rem rgba(201, 168, 76, 0.1);
 }
 
 .qr-corner {
   position: absolute;
-  width: 28px;
-  height: 28px;
+  width: 2.8rem;
+  height: 2.8rem;
   border-color: var(--gold-mid);
   border-style: solid;
 }
-.qr-corner.tl { top: -5px; left: -5px; border-width: 4px 0 0 4px; border-radius: 6px 0 0 0; }
-.qr-corner.tr { top: -5px; right: -5px; border-width: 4px 4px 0 0; border-radius: 0 6px 0 0; }
-.qr-corner.bl { bottom: -5px; left: -5px; border-width: 0 0 4px 4px; border-radius: 0 0 0 6px; }
-.qr-corner.br { bottom: -5px; right: -5px; border-width: 0 4px 4px 0; border-radius: 0 0 6px 0; }
+.qr-corner.tl { top: -0.5rem; left: -0.5rem; border-width: 0.4rem 0 0 0.4rem; border-radius: 0.6rem 0 0 0; }
+.qr-corner.tr { top: -0.5rem; right: -0.5rem; border-width: 0.4rem 0.4rem 0 0; border-radius: 0 0.6rem 0 0; }
+.qr-corner.bl { bottom: -0.5rem; left: -0.5rem; border-width: 0 0 0.4rem 0.4rem; border-radius: 0 0 0 0.6rem; }
+.qr-corner.br { bottom: -0.5rem; right: -0.5rem; border-width: 0 0.4rem 0.4rem 0; border-radius: 0 0 0.6rem 0; }
 
+/* QR target: fluid sizing, override JS inline 280px */
 #qr-target {
-  width: 280px;
-  height: 280px;
+  width: 28rem;
+  height: 28rem;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -176,34 +212,35 @@ html, body {
 #qr-target img,
 #qr-target canvas {
   display: block;
-  width: 280px;
-  height: 280px;
+  width: 28rem !important;
+  height: 28rem !important;
 }
 
 .pair-code-display {
-  margin-top: 36px;
-  font-size: 16px;
+  margin-top: 3.6rem;
+  font-size: 1.6rem;
   color: var(--text-muted);
-  letter-spacing: 2px;
+  letter-spacing: 0.2rem;
   text-transform: uppercase;
+  text-align: center;
 }
 
 .pair-code-value {
   font-family: var(--font-body);
-  font-size: 44px;
+  font-size: 4.4rem;
   font-weight: 800;
-  letter-spacing: 16px;
+  letter-spacing: 1.6rem;
   color: var(--gold-light);
   display: block;
-  margin-top: 10px;
-  text-shadow: 0 0 20px rgba(232, 212, 139, 0.2);
+  margin-top: 1rem;
+  text-shadow: 0 0 2rem rgba(232, 212, 139, 0.25);
 }
 
 .pairing-status {
-  margin-top: 28px;
-  font-size: 15px;
+  margin-top: 2.8rem;
+  font-size: 1.5rem;
   color: var(--text-muted);
-  letter-spacing: 1px;
+  letter-spacing: 0.1rem;
   animation: pulse-text 2.5s ease-in-out infinite;
 }
 
@@ -220,51 +257,57 @@ html, body {
   flex-direction: column;
 }
 
-/* ---- Multi-layer Background ---- */
+/* ---- Multi-layer Wood Background ---- */
 .bg-wood {
   position: absolute;
   inset: 0;
   background:
-    /* Fine grain lines */
-    repeating-linear-gradient(88deg, transparent, transparent 1px, rgba(139, 90, 60, 0.012) 1px, rgba(139, 90, 60, 0.012) 2px),
-    repeating-linear-gradient(91deg, transparent, transparent 2px, rgba(60, 34, 14, 0.02) 2px, rgba(60, 34, 14, 0.02) 3px),
-    repeating-linear-gradient(89deg, transparent, transparent 5px, rgba(100, 60, 30, 0.01) 5px, rgba(100, 60, 30, 0.01) 6px),
-    /* Warm wood base */
-    radial-gradient(ellipse at 50% 20%, #3a2214 0%, #2a1710 35%, #1a0e08 70%, #0d0704 100%);
+    /* Fine grain lines at varying angles */
+    repeating-linear-gradient(87deg, transparent, transparent 0.1rem, rgba(139, 90, 60, 0.015) 0.1rem, rgba(139, 90, 60, 0.015) 0.2rem),
+    repeating-linear-gradient(91deg, transparent, transparent 0.2rem, rgba(60, 34, 14, 0.025) 0.2rem, rgba(60, 34, 14, 0.025) 0.3rem),
+    repeating-linear-gradient(89deg, transparent, transparent 0.5rem, rgba(100, 60, 30, 0.012) 0.5rem, rgba(100, 60, 30, 0.012) 0.6rem),
+    repeating-linear-gradient(85deg, transparent, transparent 0.8rem, rgba(120, 70, 35, 0.008) 0.8rem, rgba(120, 70, 35, 0.008) 0.9rem),
+    /* Warm wood base with depth */
+    radial-gradient(ellipse at 50% 20%, #3d2518 0%, #2e1912 30%, #1a0e08 65%, #0d0704 100%);
 }
 
+/* ---- Islamic geometric pattern overlay ---- */
 .bg-pattern {
   position: absolute;
   inset: 0;
-  opacity: 0.35;
-  /* Islamic 8-pointed star pattern */
+  opacity: 0.3;
   background-image:
-    /* Stars */
-    radial-gradient(circle at 50% 50%, rgba(201, 168, 76, 0.04) 0%, transparent 8px),
-    /* Grid lines */
-    linear-gradient(0deg, rgba(201, 168, 76, 0.015) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(201, 168, 76, 0.015) 1px, transparent 1px),
-    /* Diagonal lines */
-    linear-gradient(45deg, rgba(201, 168, 76, 0.008) 1px, transparent 1px),
-    linear-gradient(-45deg, rgba(201, 168, 76, 0.008) 1px, transparent 1px);
-  background-size: 60px 60px, 60px 60px, 60px 60px, 60px 60px, 60px 60px;
+    radial-gradient(circle at 50% 50%, rgba(201, 168, 76, 0.05) 0%, transparent 0.8rem),
+    linear-gradient(0deg, rgba(201, 168, 76, 0.018) 0.1rem, transparent 0.1rem),
+    linear-gradient(90deg, rgba(201, 168, 76, 0.018) 0.1rem, transparent 0.1rem),
+    linear-gradient(45deg, rgba(201, 168, 76, 0.01) 0.1rem, transparent 0.1rem),
+    linear-gradient(-45deg, rgba(201, 168, 76, 0.01) 0.1rem, transparent 0.1rem);
+  background-size: 6rem 6rem;
 }
 
+/* ---- Vignette with warm center ---- */
 .bg-vignette {
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(ellipse at center, transparent 30%, rgba(10, 5, 2, 0.5) 100%),
-    linear-gradient(180deg, rgba(10, 5, 2, 0.3) 0%, transparent 8%, transparent 92%, rgba(10, 5, 2, 0.4) 100%);
+    /* Warm center brightening */
+    radial-gradient(ellipse at 40% 55%, rgba(74, 44, 26, 0.15) 0%, transparent 50%),
+    /* Edge darkening */
+    radial-gradient(ellipse at center, transparent 25%, rgba(10, 5, 2, 0.55) 100%),
+    /* Top/bottom bars */
+    linear-gradient(180deg, rgba(10, 5, 2, 0.35) 0%, transparent 8%, transparent 92%, rgba(10, 5, 2, 0.45) 100%);
   pointer-events: none;
 }
 
-/* ---- Ornate Outer Frame ---- */
+/* ---- Ornate gold border frame ---- */
 #main-screen::before {
   content: '';
   position: absolute;
-  inset: 14px;
-  border: 1px solid rgba(201, 168, 76, 0.12);
+  inset: 1.4rem;
+  border: 0.1rem solid rgba(201, 168, 76, 0.15);
+  box-shadow:
+    inset 0 0 3rem rgba(201, 168, 76, 0.03),
+    0 0 1rem rgba(201, 168, 76, 0.02);
   z-index: 5;
   pointer-events: none;
 }
@@ -272,8 +315,8 @@ html, body {
 #main-screen::after {
   content: '';
   position: absolute;
-  inset: 18px;
-  border: 1px solid rgba(201, 168, 76, 0.06);
+  inset: 1.8rem;
+  border: 0.1rem solid rgba(201, 168, 76, 0.08);
   z-index: 5;
   pointer-events: none;
 }
@@ -287,8 +330,8 @@ html, body {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  padding: 24px 60px 0;
-  height: 310px;
+  padding: 2.4rem 6rem 0;
+  height: 31rem;
 }
 
 /* Decorative header border below */
@@ -296,53 +339,55 @@ html, body {
   content: '';
   position: absolute;
   bottom: 0;
-  left: 80px;
-  right: 80px;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(201, 168, 76, 0.2), rgba(201, 168, 76, 0.3), rgba(201, 168, 76, 0.2), transparent);
+  left: 8rem;
+  right: 8rem;
+  height: 0.1rem;
+  background: linear-gradient(90deg, transparent, rgba(201, 168, 76, 0.25), rgba(201, 168, 76, 0.35), rgba(201, 168, 76, 0.25), transparent);
 }
 
-/* Sun Badges */
+/* ---- Sun Badges ---- */
 .sun-badge {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  width: 190px;
-  padding: 16px 22px 14px;
-  margin-top: 40px;
+  width: 19rem;
+  padding: 1.6rem 2.2rem 1.4rem;
+  margin-top: 4rem;
   background:
-    linear-gradient(160deg, rgba(201, 168, 76, 0.1), rgba(139, 105, 20, 0.04));
-  border: 1px solid rgba(201, 168, 76, 0.2);
-  border-radius: 14px;
+    linear-gradient(160deg, rgba(201, 168, 76, 0.12), rgba(139, 105, 20, 0.05));
+  border: 0.1rem solid rgba(201, 168, 76, 0.22);
+  border-radius: 1.4rem;
   box-shadow:
-    0 6px 24px rgba(0, 0, 0, 0.35),
-    inset 0 1px 0 rgba(255, 255, 255, 0.04),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.2);
+    0 0.6rem 2.4rem rgba(0, 0, 0, 0.4),
+    inset 0 0.1rem 0 rgba(255, 255, 255, 0.05),
+    inset 0 -0.1rem 0 rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(0.8rem);
+  -webkit-backdrop-filter: blur(0.8rem);
 }
 
 .sun-badge-label {
-  font-size: 12px;
+  font-size: 1.2rem;
   font-weight: 800;
-  letter-spacing: 5px;
+  letter-spacing: 0.5rem;
   color: var(--gold-mid);
-  margin-bottom: 8px;
+  margin-bottom: 0.8rem;
 }
 
 .sun-icon {
-  width: 30px;
-  height: 30px;
+  width: 3rem;
+  height: 3rem;
   color: var(--gold-light);
-  margin-bottom: 8px;
-  filter: drop-shadow(0 0 6px rgba(255, 215, 0, 0.3));
+  margin-bottom: 0.8rem;
+  filter: drop-shadow(0 0 0.6rem rgba(255, 215, 0, 0.35));
 }
 
 .sun-badge-time {
   font-family: var(--font-display);
-  font-size: 34px;
+  font-size: 3.4rem;
   font-weight: 700;
   color: var(--cream);
-  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+  text-shadow: 0 0.2rem 0.8rem rgba(0, 0, 0, 0.5);
 }
 
 /* ---- Clock Section ---- */
@@ -355,30 +400,33 @@ html, body {
 
 .clock-diamond {
   position: relative;
-  width: 210px;
-  height: 210px;
+  width: 21rem;
+  height: 21rem;
   transform: rotate(45deg);
-  /* Gold frame */
+  /* Multi-layer gold frame */
   background: linear-gradient(135deg, #d4b85c 0%, #a08530 25%, #c9a84c 50%, #a08530 75%, #d4b85c 100%);
-  padding: 4px;
+  padding: 0.4rem;
   box-shadow:
-    0 0 50px rgba(201, 168, 76, 0.15),
-    0 12px 50px rgba(0, 0, 0, 0.5);
+    0 0 5rem rgba(201, 168, 76, 0.18),
+    0 1.2rem 5rem rgba(0, 0, 0, 0.5),
+    0 0 0.2rem rgba(201, 168, 76, 0.3);
 }
 
-/* Outer decorative border */
+/* Outer decorative line */
 .clock-diamond::before {
   content: '';
   position: absolute;
-  inset: -14px;
-  border: 2px solid rgba(201, 168, 76, 0.18);
+  inset: -1.4rem;
+  border: 0.2rem solid rgba(201, 168, 76, 0.2);
+  box-shadow: 0 0 1.5rem rgba(201, 168, 76, 0.06);
 }
 
+/* Inner decorative line */
 .clock-diamond::after {
   content: '';
   position: absolute;
-  inset: -8px;
-  border: 1px solid rgba(201, 168, 76, 0.12);
+  inset: -0.8rem;
+  border: 0.1rem solid rgba(201, 168, 76, 0.14);
 }
 
 .clock-diamond-inner {
@@ -398,7 +446,7 @@ html, body {
 .clock-glow {
   position: absolute;
   inset: -50%;
-  background: radial-gradient(ellipse at center, rgba(255, 213, 79, 0.06) 0%, transparent 50%);
+  background: radial-gradient(ellipse at center, rgba(255, 213, 79, 0.07) 0%, transparent 50%);
   animation: glow-pulse 4s ease-in-out infinite;
 }
 
@@ -409,12 +457,12 @@ html, body {
 
 .clock-time {
   font-family: var(--font-display);
-  font-size: 54px;
+  font-size: 5.4rem;
   font-weight: 900;
   color: var(--cream);
   text-shadow:
-    0 0 24px rgba(255, 245, 212, 0.2),
-    0 2px 4px rgba(0, 0, 0, 0.6);
+    0 0 2.4rem rgba(255, 245, 212, 0.2),
+    0 0.2rem 0.4rem rgba(0, 0, 0, 0.6);
   line-height: 1;
   position: relative;
   z-index: 1;
@@ -422,29 +470,30 @@ html, body {
 
 .clock-ampm {
   font-family: var(--font-display);
-  font-size: 20px;
+  font-size: 2rem;
   font-weight: 600;
   color: var(--gold-light);
-  letter-spacing: 5px;
-  margin-top: 4px;
+  letter-spacing: 0.5rem;
+  margin-top: 0.4rem;
   position: relative;
   z-index: 1;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+  text-shadow: 0 0.1rem 0.3rem rgba(0, 0, 0, 0.4);
 }
 
+/* ---- Date Bar ---- */
 .clock-date-bar {
   display: flex;
   align-items: center;
-  gap: 16px;
-  margin-top: 30px;
-  padding: 10px 36px;
-  font-size: 14px;
+  gap: 1.6rem;
+  margin-top: 3rem;
+  padding: 1rem 3.6rem;
+  font-size: 1.4rem;
   font-weight: 600;
-  letter-spacing: 3.5px;
+  letter-spacing: 0.35rem;
   color: var(--text-muted);
-  background: linear-gradient(90deg, transparent, rgba(201, 168, 76, 0.06), transparent);
-  border-top: 1px solid rgba(201, 168, 76, 0.12);
-  border-bottom: 1px solid rgba(201, 168, 76, 0.12);
+  background: linear-gradient(90deg, transparent, rgba(201, 168, 76, 0.07), transparent);
+  border-top: 0.1rem solid rgba(201, 168, 76, 0.14);
+  border-bottom: 0.1rem solid rgba(201, 168, 76, 0.14);
 }
 
 .date-separator {
@@ -452,17 +501,18 @@ html, body {
   font-weight: 300;
 }
 
+/* ---- Masjid Emblem ---- */
 .masjid-emblem {
   display: flex;
   flex-direction: column;
   align-items: center;
-  margin-top: 12px;
-  gap: 3px;
+  margin-top: 1.2rem;
+  gap: 0.3rem;
 }
 
 .masjid-emblem-icon {
-  width: 32px;
-  height: 32px;
+  width: 3.2rem;
+  height: 3.2rem;
   color: var(--gold-mid);
   opacity: 0.5;
 }
@@ -471,9 +521,9 @@ html, body {
 
 .masjid-emblem-name {
   font-family: var(--font-display);
-  font-size: 12px;
+  font-size: 1.2rem;
   font-weight: 600;
-  letter-spacing: 4px;
+  letter-spacing: 0.4rem;
   text-transform: uppercase;
   color: var(--gold-mid);
   opacity: 0.45;
@@ -486,8 +536,8 @@ html, body {
   position: relative;
   z-index: 10;
   display: flex;
-  gap: 28px;
-  padding: 12px 60px 0;
+  gap: 2.8rem;
+  padding: 1.2rem 6rem 0;
   flex: 1;
   min-height: 0;
 }
@@ -502,28 +552,28 @@ html, body {
 
 .table-header {
   display: grid;
-  grid-template-columns: 290px 1fr 1fr 1fr;
+  grid-template-columns: 19rem 1fr 1fr 1fr;
   align-items: center;
-  padding: 0 28px;
-  margin-bottom: 6px;
-  height: 42px;
+  padding: 0 2.8rem;
+  margin-bottom: 0.6rem;
+  height: 4.2rem;
 }
 
 .table-header > div {
-  font-size: 14px;
+  font-size: 1.4rem;
   font-weight: 800;
-  letter-spacing: 5px;
+  letter-spacing: 0.5rem;
   text-transform: uppercase;
   color: var(--gold-mid);
   text-align: center;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  text-shadow: 0 0.1rem 0.2rem rgba(0, 0, 0, 0.3);
 }
 .th-name { text-align: left !important; }
 
 .prayer-rows {
   display: flex;
   flex-direction: column;
-  gap: 7px;
+  gap: 0.7rem;
   flex: 1;
 }
 
@@ -531,46 +581,48 @@ html, body {
 .prayer-row {
   position: relative;
   display: grid;
-  grid-template-columns: 290px 1fr 1fr 1fr;
+  grid-template-columns: 19rem 1fr 1fr 1fr;
   align-items: center;
-  padding: 0 28px;
+  padding: 0 2.8rem;
   height: 0;
   flex: 1;
-  border-radius: 12px;
+  border-radius: 1.2rem;
   overflow: hidden;
   transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
 
-  /* Frosted glass */
+  /* Enhanced glass morphism */
   background:
-    linear-gradient(135deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.015));
-  border: 1px solid rgba(201, 168, 76, 0.1);
+    linear-gradient(135deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.015));
+  border: 0.1rem solid rgba(201, 168, 76, 0.12);
+  backdrop-filter: blur(0.6rem);
+  -webkit-backdrop-filter: blur(0.6rem);
   box-shadow:
-    0 2px 16px rgba(0, 0, 0, 0.25),
-    inset 0 1px 0 rgba(255, 255, 255, 0.03),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.1);
+    0 0.2rem 1.6rem rgba(0, 0, 0, 0.25),
+    inset 0 0.1rem 0 rgba(255, 255, 255, 0.035),
+    inset 0 -0.1rem 0 rgba(0, 0, 0, 0.1);
 }
 
-/* Left accent bar */
+/* Left gold accent bar */
 .prayer-row::before {
   content: '';
   position: absolute;
   left: 0;
-  top: 8px;
-  bottom: 8px;
-  width: 3px;
-  border-radius: 0 2px 2px 0;
+  top: 0.8rem;
+  bottom: 0.8rem;
+  width: 0.3rem;
+  border-radius: 0 0.2rem 0.2rem 0;
   background: linear-gradient(180deg, var(--gold-mid), var(--gold-dark));
   opacity: 0.25;
   transition: all 0.5s ease;
 }
 
-/* Inner decorative border (hidden by default) */
+/* Inner decorative border */
 .prayer-row::after {
   content: '';
   position: absolute;
-  inset: 2px;
-  border-radius: 10px;
-  border: 1px solid transparent;
+  inset: 0.2rem;
+  border-radius: 1rem;
+  border: 0.1rem solid transparent;
   transition: border-color 0.5s ease;
   pointer-events: none;
 }
@@ -582,43 +634,72 @@ html, body {
   transition: opacity 0.6s ease;
   pointer-events: none;
   background:
-    radial-gradient(ellipse at 20% 50%, rgba(255, 193, 7, 0.08) 0%, transparent 60%),
-    radial-gradient(ellipse at 80% 50%, rgba(255, 152, 0, 0.04) 0%, transparent 60%);
+    radial-gradient(ellipse at 20% 50%, rgba(255, 193, 7, 0.1) 0%, transparent 60%),
+    radial-gradient(ellipse at 80% 50%, rgba(255, 152, 0, 0.05) 0%, transparent 60%);
+}
+
+/* Staggered fade-in entrance */
+.prayer-row {
+  animation: row-fade-in 0.6s ease backwards;
+}
+.prayer-row:nth-child(1) { animation-delay: 0.05s; }
+.prayer-row:nth-child(2) { animation-delay: 0.12s; }
+.prayer-row:nth-child(3) { animation-delay: 0.19s; }
+.prayer-row:nth-child(4) { animation-delay: 0.26s; }
+.prayer-row:nth-child(5) { animation-delay: 0.33s; }
+
+@keyframes row-fade-in {
+  from { opacity: 0; transform: translateY(0.8rem); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 /* ---- Active Prayer Row ---- */
 .prayer-row.active {
   background:
-    linear-gradient(135deg, rgba(255, 193, 7, 0.1), rgba(255, 160, 0, 0.04), rgba(255, 193, 7, 0.06));
-  border-color: rgba(201, 168, 76, 0.3);
+    linear-gradient(135deg, rgba(255, 193, 7, 0.12), rgba(255, 160, 0, 0.05), rgba(255, 193, 7, 0.08));
+  border-color: rgba(201, 168, 76, 0.35);
   box-shadow:
-    0 0 40px rgba(255, 193, 7, 0.08),
-    0 4px 24px rgba(0, 0, 0, 0.35),
-    inset 0 0 40px rgba(255, 193, 7, 0.02),
-    inset 0 1px 0 rgba(255, 215, 0, 0.08);
+    0 0 4rem rgba(255, 193, 7, 0.1),
+    0 0.4rem 2.4rem rgba(0, 0, 0, 0.35),
+    0 0 1rem rgba(255, 193, 7, 0.06),
+    inset 0 0 4rem rgba(255, 193, 7, 0.03),
+    inset 0 0.1rem 0 rgba(255, 215, 0, 0.1);
   transform: scale(1.008);
   z-index: 2;
 }
 
+/* Active gold accent bar with shimmer */
 .prayer-row.active::before {
   opacity: 1;
-  top: 4px;
-  bottom: 4px;
-  width: 4px;
+  top: 0.4rem;
+  bottom: 0.4rem;
+  width: 0.4rem;
   background: linear-gradient(180deg, var(--gold-bright), var(--gold-mid), var(--gold-bright));
-  box-shadow: 0 0 14px rgba(255, 215, 0, 0.4);
+  box-shadow: 0 0 1.4rem rgba(255, 215, 0, 0.5);
+  animation: shimmer 3s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+  0%, 100% {
+    box-shadow: 0 0 1rem rgba(255, 215, 0, 0.3);
+    background: linear-gradient(180deg, var(--gold-bright), var(--gold-mid), var(--gold-bright));
+  }
+  50% {
+    box-shadow: 0 0 2rem rgba(255, 215, 0, 0.6);
+    background: linear-gradient(180deg, var(--gold-mid), var(--gold-bright), var(--gold-mid));
+  }
 }
 
 .prayer-row.active::after {
-  border-color: rgba(201, 168, 76, 0.15);
+  border-color: rgba(201, 168, 76, 0.18);
 }
 
 .prayer-row.active .prayer-row-glow {
   opacity: 1;
-  animation: active-glow 3.5s ease-in-out infinite;
+  animation: warmGlow 3.5s ease-in-out infinite;
 }
 
-@keyframes active-glow {
+@keyframes warmGlow {
   0%, 100% { opacity: 0.5; }
   50% { opacity: 1; }
 }
@@ -627,34 +708,34 @@ html, body {
 .prayer-name {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 1.6rem;
 }
 
 .prayer-english {
   font-family: var(--font-display);
-  font-size: 24px;
+  font-size: 2.4rem;
   font-weight: 800;
-  letter-spacing: 2px;
+  letter-spacing: 0.2rem;
   color: var(--cream);
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
-  min-width: 130px;
+  text-shadow: 0 0.2rem 0.4rem rgba(0, 0, 0, 0.4);
+  min-width: 0;
 }
 
 .prayer-arabic {
   font-family: var(--font-arabic);
-  font-size: 26px;
+  font-size: 2.6rem;
   font-weight: 700;
   color: var(--gold-light);
   opacity: 0.55;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  text-shadow: 0 0.1rem 0.3rem rgba(0, 0, 0, 0.3);
   direction: rtl;
 }
 
-/* Active row text brighter */
+/* Active row text enhancement */
 .prayer-row.active .prayer-english {
   text-shadow:
-    0 0 16px rgba(255, 245, 212, 0.15),
-    0 2px 4px rgba(0, 0, 0, 0.4);
+    0 0 1.6rem rgba(255, 245, 212, 0.15),
+    0 0.2rem 0.4rem rgba(0, 0, 0, 0.4);
 }
 .prayer-row.active .prayer-arabic { opacity: 0.75; }
 
@@ -663,12 +744,12 @@ html, body {
 .prayer-athan,
 .prayer-iqamah {
   font-family: var(--font-display);
-  font-size: 28px;
+  font-size: 2.8rem;
   font-weight: 700;
   text-align: center;
   color: var(--cream);
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.35);
-  letter-spacing: 0.5px;
+  text-shadow: 0 0.2rem 0.4rem rgba(0, 0, 0, 0.35);
+  letter-spacing: 0.05rem;
 }
 
 .prayer-iqamah {
@@ -677,10 +758,10 @@ html, body {
 }
 
 .time-suffix {
-  font-size: 14px;
+  font-size: 1.4rem;
   font-weight: 600;
   opacity: 0.55;
-  margin-left: 2px;
+  margin-left: 0.2rem;
   letter-spacing: 0;
   vertical-align: baseline;
 }
@@ -689,92 +770,104 @@ html, body {
    RIGHT PANEL
    ============================================ */
 .right-panel {
-  width: 400px;
+  width: 40rem;
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  padding-top: 48px;
+  gap: 1.6rem;
+  padding-top: 4.8rem;
   flex-shrink: 0;
 }
 
-/* Shared card styles */
+/* Shared card styles - deep glass morphism */
 .current-prayer-card,
 .countdown-card {
   position: relative;
-  border-radius: 14px;
+  border-radius: 1.4rem;
   overflow: hidden;
   background:
-    linear-gradient(160deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0.04));
-  border: 1px solid rgba(201, 168, 76, 0.18);
+    linear-gradient(160deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0.05));
+  border: 0.1rem solid rgba(201, 168, 76, 0.2);
+  backdrop-filter: blur(1rem);
+  -webkit-backdrop-filter: blur(1rem);
   box-shadow:
-    0 8px 36px rgba(0, 0, 0, 0.35),
-    inset 0 1px 0 rgba(255, 255, 255, 0.04),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.15);
+    0 0.8rem 3.6rem rgba(0, 0, 0, 0.4),
+    inset 0 0.1rem 0 rgba(255, 255, 255, 0.05),
+    inset 0 -0.1rem 0 rgba(0, 0, 0, 0.15);
 }
 
 .card-ornament {
   position: absolute;
   left: 15%;
   right: 15%;
-  height: 1px;
+  height: 0.1rem;
   background: linear-gradient(90deg, transparent, var(--gold-mid), transparent);
-  opacity: 0.3;
+  opacity: 0.35;
 }
 .card-ornament.top { top: 0; }
 .card-ornament.bottom { bottom: 0; }
 
 /* ---- Current Prayer Card ---- */
 .current-prayer-card {
-  padding: 26px 28px 22px;
+  padding: 2.6rem 2.8rem 2.2rem;
 }
 
 .current-prayer-label {
-  font-size: 13px;
+  font-size: 1.3rem;
   font-weight: 800;
-  letter-spacing: 5px;
+  letter-spacing: 0.5rem;
   text-transform: uppercase;
   color: var(--gold-mid);
   text-align: center;
-  margin-bottom: 14px;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  margin-bottom: 1.4rem;
+  text-shadow: 0 0.1rem 0.2rem rgba(0, 0, 0, 0.3);
 }
 
 .current-prayer-display {
   text-align: center;
-  margin-bottom: 14px;
+  margin-bottom: 1.4rem;
 }
 
 .current-prayer-arabic {
   display: block;
   font-family: var(--font-arabic);
-  font-size: 50px;
+  font-size: 5rem;
   font-weight: 700;
   color: var(--cream);
   text-shadow:
-    0 0 24px rgba(255, 245, 212, 0.1),
-    0 2px 6px rgba(0, 0, 0, 0.4);
+    0 0 2.4rem rgba(255, 245, 212, 0.1),
+    0 0.2rem 0.6rem rgba(0, 0, 0, 0.4);
   line-height: 1.3;
 }
 
 .current-prayer-english {
   display: block;
   font-family: var(--font-display);
-  font-size: 36px;
+  font-size: 3.6rem;
   font-weight: 900;
-  letter-spacing: 7px;
+  letter-spacing: 0.7rem;
   color: var(--cream);
-  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+  text-shadow: 0 0.2rem 0.8rem rgba(0, 0, 0, 0.4);
   line-height: 1.2;
+}
+
+/* Ornamental divider between Arabic and English */
+.current-prayer-display::after {
+  content: '';
+  display: block;
+  width: 40%;
+  height: 0.1rem;
+  margin: 0.8rem auto;
+  background: linear-gradient(90deg, transparent, rgba(201, 168, 76, 0.3), transparent);
 }
 
 .current-prayer-details {
   text-align: center;
-  font-size: 13px;
+  font-size: 1.3rem;
   font-weight: 600;
-  letter-spacing: 1.5px;
+  letter-spacing: 0.15rem;
   color: var(--text-muted);
-  padding-top: 14px;
-  border-top: 1px solid rgba(201, 168, 76, 0.1);
+  padding-top: 1.4rem;
+  border-top: 0.1rem solid rgba(201, 168, 76, 0.12);
 }
 
 /* ---- Countdown Card ---- */
@@ -784,51 +877,57 @@ html, body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 24px 28px;
+  padding: 2.4rem 2.8rem;
 }
 
 .countdown-label {
-  font-size: 15px;
+  font-size: 1.5rem;
   font-weight: 800;
-  letter-spacing: 5px;
+  letter-spacing: 0.5rem;
   text-transform: uppercase;
   color: var(--gold-mid);
   text-align: center;
-  margin-bottom: 18px;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  margin-bottom: 1.8rem;
+  text-shadow: 0 0.1rem 0.2rem rgba(0, 0, 0, 0.3);
 }
 
 .countdown-display {
   display: flex;
   align-items: baseline;
   justify-content: center;
-  gap: 10px;
+  gap: 1rem;
+  animation: breathe 4s ease-in-out infinite;
+}
+
+@keyframes breathe {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.02); }
 }
 
 .countdown-block {
   display: flex;
   align-items: baseline;
-  gap: 8px;
+  gap: 0.8rem;
 }
 
 .countdown-value {
   font-family: var(--font-display);
-  font-size: 68px;
+  font-size: 6.8rem;
   font-weight: 900;
   color: var(--cream);
   text-shadow:
-    0 0 30px rgba(255, 245, 212, 0.1),
-    0 4px 8px rgba(0, 0, 0, 0.5);
+    0 0 3rem rgba(255, 245, 212, 0.12),
+    0 0.4rem 0.8rem rgba(0, 0, 0, 0.5);
   line-height: 1;
 }
 
 .countdown-unit {
   font-family: var(--font-display);
-  font-size: 22px;
+  font-size: 2.2rem;
   font-weight: 800;
-  letter-spacing: 3px;
+  letter-spacing: 0.3rem;
   color: var(--gold-mid);
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  text-shadow: 0 0.1rem 0.2rem rgba(0, 0, 0, 0.3);
 }
 
 /* ============================================
@@ -839,16 +938,18 @@ html, body {
   z-index: 10;
   display: flex;
   align-items: center;
-  height: 68px;
-  margin: auto 60px 24px;
+  height: 6.8rem;
+  margin: auto 6rem 2.4rem;
   background:
-    linear-gradient(135deg, rgba(26, 14, 8, 0.95), rgba(44, 24, 16, 0.85), rgba(26, 14, 8, 0.95));
-  border: 1px solid rgba(201, 168, 76, 0.18);
-  border-radius: 12px;
+    linear-gradient(135deg, rgba(26, 14, 8, 0.95), rgba(44, 24, 16, 0.88), rgba(26, 14, 8, 0.95));
+  border: 0.1rem solid rgba(201, 168, 76, 0.2);
+  border-radius: 1.2rem;
   overflow: hidden;
+  backdrop-filter: blur(0.8rem);
+  -webkit-backdrop-filter: blur(0.8rem);
   box-shadow:
-    0 6px 28px rgba(0, 0, 0, 0.35),
-    inset 0 1px 0 rgba(255, 255, 255, 0.03);
+    0 0.6rem 2.8rem rgba(0, 0, 0, 0.4),
+    inset 0 0.1rem 0 rgba(255, 255, 255, 0.04);
 }
 
 .ticker-border-top {
@@ -856,14 +957,14 @@ html, body {
   top: 0;
   left: 8%;
   right: 8%;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(201, 168, 76, 0.35), transparent);
+  height: 0.1rem;
+  background: linear-gradient(90deg, transparent, rgba(201, 168, 76, 0.4), transparent);
 }
 
 .ticker-track {
   flex: 1;
   overflow: hidden;
-  padding: 0 20px;
+  padding: 0 2rem;
   height: 100%;
   display: flex;
   align-items: center;
@@ -875,23 +976,24 @@ html, body {
   display: flex;
   align-items: center;
   white-space: nowrap;
+  will-change: transform;
   animation: ticker-scroll 30s linear infinite;
-  font-size: 19px;
+  font-size: 1.9rem;
   font-weight: 500;
   color: var(--cream-light);
-  letter-spacing: 0.5px;
+  letter-spacing: 0.05rem;
 }
 
 .ticker-content .ticker-item {
   display: inline-flex;
   align-items: center;
-  padding: 0 50px;
+  padding: 0 5rem;
 }
 
 .ticker-content .ticker-separator {
   display: inline-block;
-  width: 5px;
-  height: 5px;
+  width: 0.5rem;
+  height: 0.5rem;
   background: var(--gold-mid);
   border-radius: 50%;
   opacity: 0.5;
@@ -912,21 +1014,21 @@ html, body {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 0 28px;
+  padding: 0 2.8rem;
   height: 100%;
-  border-left: 1px solid rgba(201, 168, 76, 0.12);
-  background: linear-gradient(135deg, rgba(201, 168, 76, 0.04), transparent);
+  border-left: 0.1rem solid rgba(201, 168, 76, 0.14);
+  background: linear-gradient(135deg, rgba(201, 168, 76, 0.05), transparent);
   flex-shrink: 0;
 }
 
 .ticker-logo-text {
   font-family: var(--font-display);
-  font-size: 16px;
+  font-size: 1.6rem;
   font-weight: 800;
-  letter-spacing: 4px;
+  letter-spacing: 0.4rem;
   color: var(--gold-mid);
   text-transform: uppercase;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  text-shadow: 0 0.1rem 0.2rem rgba(0, 0, 0, 0.3);
 }
 
 /* ============================================
@@ -936,52 +1038,37 @@ html, body {
 /* Jumuah Friday */
 .prayer-row[data-prayer="dhuhr"].jumuah .prayer-english::after {
   content: ' / JUMUAH';
-  font-size: 14px;
+  font-size: 1.4rem;
   font-weight: 700;
   color: var(--gold-light);
-  letter-spacing: 2px;
+  letter-spacing: 0.2rem;
 }
 
-/* Between prayers */
+/* Between prayers - dimmed */
 .current-prayer-card.between-prayers .current-prayer-label { color: var(--text-muted); }
 .current-prayer-card.between-prayers .current-prayer-arabic,
 .current-prayer-card.between-prayers .current-prayer-english { opacity: 0.4; }
-
-/* ============================================
-   ANIMATIONS
-   ============================================ */
-@keyframes fade-in {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-.prayer-row { animation: fade-in 0.5s ease backwards; }
-.prayer-row:nth-child(1) { animation-delay: 0.05s; }
-.prayer-row:nth-child(2) { animation-delay: 0.1s; }
-.prayer-row:nth-child(3) { animation-delay: 0.15s; }
-.prayer-row:nth-child(4) { animation-delay: 0.2s; }
-.prayer-row:nth-child(5) { animation-delay: 0.25s; }
 
 /* ============================================
    CONNECTION STATUS
    ============================================ */
 .connection-status {
   position: fixed;
-  top: 20px;
-  right: 20px;
-  width: 10px;
-  height: 10px;
+  top: 2rem;
+  right: 2rem;
+  width: 1rem;
+  height: 1rem;
   border-radius: 50%;
   z-index: 100;
   transition: background 0.3s ease;
 }
 .connection-status.online {
   background: #4caf50;
-  box-shadow: 0 0 8px rgba(76, 175, 80, 0.4);
+  box-shadow: 0 0 0.8rem rgba(76, 175, 80, 0.4);
 }
 .connection-status.offline {
   background: #f44336;
-  box-shadow: 0 0 8px rgba(244, 67, 54, 0.4);
+  box-shadow: 0 0 0.8rem rgba(244, 67, 54, 0.4);
   animation: pulse-dot 2s ease-in-out infinite;
 }
 
@@ -991,21 +1078,18 @@ html, body {
 }
 
 /* ============================================
-   RESPONSIVE SCALING
+   REDUCED MOTION
    ============================================ */
-
-/* Scale for smaller viewports */
-@media screen and (max-width: 1919px) {
-  html, body {
-    transform: scale(calc(100vw / 1920));
-    transform-origin: top left;
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
-}
-
-/* 4K upscale */
-@media screen and (min-width: 3840px) {
-  html, body {
-    transform: scale(2);
-    transform-origin: top left;
+  .ticker-content {
+    animation: none !important;
+  }
+  .countdown-display {
+    animation: none !important;
   }
 }

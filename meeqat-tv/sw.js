@@ -3,15 +3,14 @@
    Offline-first caching strategy
    ============================================ */
 
-const STATIC_CACHE = 'meeqat-tv-static-v3';
-const DATA_CACHE = 'meeqat-tv-data-v3';
+const STATIC_CACHE = 'meeqat-tv-static-v8';
+const DATA_CACHE = 'meeqat-tv-data-v8';
 
 // Static assets to precache
 const STATIC_ASSETS = [
   '/',
   '/index.html',
   '/css/styles.css',
-  '/js/qr.js',
   '/js/app.js',
   '/js/api.js',
   '/manifest.json'
@@ -41,11 +40,6 @@ self.addEventListener('activate', event => {
 // Fetch - strategy depends on request type
 self.addEventListener('fetch', event => {
   const url = new URL(event.request.url);
-
-  // Let QR code API requests pass through directly - do NOT cache
-  if (url.hostname === 'api.qrserver.com') {
-    return;
-  }
 
   // API requests: Network-first, cache fallback
   if (url.pathname.startsWith('/api/')) {

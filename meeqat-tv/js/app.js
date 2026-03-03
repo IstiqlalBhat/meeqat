@@ -177,50 +177,15 @@ const MeeqatTV = (() => {
     document.getElementById('main-screen').classList.remove('active');
 
     pairCode = generatePairCode();
-    document.getElementById('pair-code-value').textContent = pairCode;
 
-    // Generate QR code
-    generateQRCode();
+    // Display pair code as individual digits
+    const digitEls = document.querySelectorAll('#pair-code-value .pair-digit');
+    for (let i = 0; i < digitEls.length; i++) {
+      digitEls[i].textContent = pairCode[i] || '-';
+    }
 
     // Register device with backend
     registerAndPoll();
-  }
-
-  function generateQRCode() {
-    var target = document.getElementById('qr-target');
-    if (!target) return;
-
-    // Encode just the pair code for simpler, easier-to-scan QR
-    var pairUrl = pairCode;
-
-    // Clear previous content
-    target.innerHTML = '';
-
-    try {
-      // Generate QR code locally on canvas
-      var canvas = document.createElement('canvas');
-      QRGen.render(pairUrl, canvas, { size: 560, margin: 4 });
-
-      // Verify canvas has content (not all white)
-      var ctx = canvas.getContext('2d');
-      var pixel = ctx.getImageData(20, 20, 1, 1).data;
-      console.log('QR canvas size:', canvas.width, 'x', canvas.height, 'sample pixel:', pixel[0], pixel[1], pixel[2]);
-
-      // Convert to data URL and display as img (most compatible across browsers)
-      var dataUrl = canvas.toDataURL('image/png');
-      var img = document.createElement('img');
-      img.src = dataUrl;
-      img.alt = 'Scan to pair';
-      img.style.display = 'block';
-      img.style.width = '280px';
-      img.style.height = '280px';
-      target.appendChild(img);
-      console.log('QR code generated locally, data URL length:', dataUrl.length);
-    } catch (err) {
-      console.warn('QR generation failed:', err);
-      // Fallback: show pair code as text
-      target.innerHTML = '<p style="color:#2c1810;font-size:40px;font-weight:900;letter-spacing:8px;line-height:280px;text-align:center;">' + pairCode + '</p>';
-    }
   }
 
   let registerRetryCount = 0;
@@ -231,7 +196,7 @@ const MeeqatTV = (() => {
 
     // No backend configured - show pairing code only, no polling
     if (!backend) {
-      statusEl.textContent = 'Scan QR code or enter pair code in the Meeqat app';
+      statusEl.textContent = 'Enter the pair code in the Meeqat app';
       return;
     }
 

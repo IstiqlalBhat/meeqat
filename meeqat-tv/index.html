@@ -2,7 +2,7 @@
 <html lang="en" dir="ltr">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=1920, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Meeqat - Prayer Times Display</title>
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#1a0e08">
@@ -14,7 +14,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700;800;900&family=Amiri:wght@400;700&family=Inter:wght@300;400;500;600;700;800;900&family=Noto+Naskh+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/styles.css?v=7">
+  <link rel="stylesheet" href="css/styles.css?v=8">
 </head>
 <body>
   <!-- ============================================ -->
@@ -35,17 +35,14 @@
       </div>
 
       <div class="pairing-body">
-        <p class="pairing-instruction">Scan the QR code with the Meeqat app to pair this display</p>
-        <div class="qr-frame">
-          <div class="qr-corner tl"></div>
-          <div class="qr-corner tr"></div>
-          <div class="qr-corner bl"></div>
-          <div class="qr-corner br"></div>
-          <div id="qr-target"></div>
-        </div>
-        <div class="pair-code-display">
-          <span class="pair-code-label">Pair Code:</span>
-          <span class="pair-code-value" id="pair-code-value">------</span>
+        <p class="pairing-instruction">Enter this code in the Meeqat app to pair this display</p>
+        <div class="pair-code-hero" id="pair-code-value">
+          <span class="pair-digit">-</span>
+          <span class="pair-digit">-</span>
+          <span class="pair-digit">-</span>
+          <span class="pair-digit">-</span>
+          <span class="pair-digit">-</span>
+          <span class="pair-digit">-</span>
         </div>
         <div class="pairing-status" id="pairing-status">Waiting for connection...</div>
       </div>
@@ -240,7 +237,7 @@
       if (typeof caches !== 'undefined') {
         caches.keys().then(function(keys) {
           keys.forEach(function(key) {
-            if (key.indexOf('v3') === -1) {
+            if (key.indexOf('v8') === -1) {
               console.log('Deleting old cache:', key);
               caches.delete(key);
             }
@@ -254,8 +251,7 @@
     })();
   </script>
   <!-- App Scripts -->
-  <script src="js/qr.js?v=7"></script>
-  <script src="js/api.js?v=7"></script>
-  <script src="js/app.js?v=7"></script>
+  <script src="js/api.js?v=8"></script>
+  <script src="js/app.js?v=8"></script>
 </body>
 </html>
