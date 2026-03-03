@@ -44,7 +44,13 @@ const MeeqatTV = (() => {
     localStorage.setItem('meeqat_tv_device_id', deviceId);
 
     masjidId = localStorage.getItem('meeqat_tv_masjid_id');
-    const savedBackend = localStorage.getItem('meeqat_tv_backend_url');
+    let savedBackend = localStorage.getItem('meeqat_tv_backend_url');
+
+    // Reject saved backend if it points to the TV app itself (not a real backend)
+    if (savedBackend && savedBackend.includes('meeqat-tv')) {
+      localStorage.removeItem('meeqat_tv_backend_url');
+      savedBackend = null;
+    }
 
     if (savedBackend) {
       MeeqatAPI.setBackendUrl(savedBackend);
