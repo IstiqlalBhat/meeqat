@@ -190,10 +190,8 @@ const MeeqatTV = (() => {
     var target = document.getElementById('qr-target');
     if (!target) return;
 
-    var backend = MeeqatAPI.getBackendUrl();
-    var pairUrl = backend
-      ? backend + '/api/tv/pair?code=' + pairCode
-      : 'meeqat://pair?code=' + pairCode;
+    // Encode just the pair code for simpler, easier-to-scan QR
+    var pairUrl = pairCode;
 
     // Clear previous content
     target.innerHTML = '';
