@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../models/prayer_time.dart';
 import '../services/prayer_provider.dart';
@@ -753,12 +754,12 @@ class _TvPairScreenState extends State<_TvPairScreen> {
                   final isFilled = _controllers[i].text.isNotEmpty;
                   final isFocused = _focusNodes[i].hasFocus;
 
-                  return Padding(
-                    padding: EdgeInsets.only(left: i > 0 ? 10 : 0),
-                    child: SizedBox(
-                      width: 48,
-                      height: 60,
-                      child: KeyboardListener(
+                  return Expanded(
+                    child: Padding(
+                      padding: EdgeInsets.only(left: i > 0 ? 8 : 0),
+                      child: SizedBox(
+                        height: 60,
+                        child: KeyboardListener(
                         focusNode: FocusNode(),
                         onKeyEvent: (event) => _onKeyEvent(i, event),
                         child: AnimatedContainer(
@@ -805,6 +806,7 @@ class _TvPairScreenState extends State<_TvPairScreen> {
                               border: InputBorder.none,
                               contentPadding: EdgeInsets.zero,
                             ),
+                          ),
                           ),
                         ),
                       ),
