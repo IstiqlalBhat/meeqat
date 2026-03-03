@@ -85,7 +85,37 @@
             disabled>
             Sign In
           </button>
+
+          <p id="forgot-link" class="text-center mt-3">
+            <button type="button" onclick="showResetForm()" class="text-xs text-gold-500 hover:text-gold-600 font-medium transition-colors">
+              Forgot password?
+            </button>
+          </p>
         </form>
+
+        <!-- Forgot Password Form (hidden by default) -->
+        <div id="reset-form" class="hidden">
+          <div id="reset-success" class="hidden flex items-center gap-2 bg-sage-300/20 text-sage-500 text-sm rounded-xl px-4 py-3 mb-4 border border-sage-300/30">
+            <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+            <span id="reset-success-text"></span>
+          </div>
+          <p class="text-sm text-muted mb-4">Enter your email and we'll send you a link to reset your password.</p>
+          <div class="mb-4">
+            <label class="block text-sm font-medium text-muted mb-2">Email</label>
+            <input type="email" id="reset-email" required
+              class="w-full px-4 py-3 rounded-xl border border-cream-200 bg-cream-50 text-charcoal focus:outline-none focus:ring-2 focus:ring-gold-400 focus:border-transparent transition-all text-sm"
+              placeholder="admin@yourmasjid.org">
+          </div>
+          <button type="button" id="reset-btn" onclick="handleResetPassword()"
+            class="w-full bg-gradient-to-r from-gold-400 to-gold-500 text-white font-medium py-3 rounded-xl hover:from-gold-500 hover:to-gold-600 transition-all shadow-sm text-sm active:scale-[0.98]">
+            Send Reset Link
+          </button>
+          <p class="text-center mt-3">
+            <button type="button" onclick="showLoginForm()" class="text-xs text-gold-500 hover:text-gold-600 font-medium transition-colors">
+              Back to Sign In
+            </button>
+          </p>
+        </div>
       </div>
 
       <p class="text-center text-xs text-muted mt-4">Secured with Firebase Authentication</p>
@@ -142,6 +172,49 @@
       const box = document.getElementById('error-box');
       box.classList.add('hidden');
       box.classList.remove('flex');
+    }
+
+    function showResetForm() {
+      document.getElementById('auth-form').classList.add('hidden');
+      document.getElementById('forgot-link').classList.add('hidden');
+      document.getElementById('reset-form').classList.remove('hidden');
+      document.getElementById('reset-success').classList.add('hidden');
+      document.getElementById('reset-email').value = document.getElementById('email').value;
+      hideError();
+    }
+
+    function showLoginForm() {
+      document.getElementById('auth-form').classList.remove('hidden');
+      document.getElementById('forgot-link').classList.remove('hidden');
+      document.getElementById('reset-form').classList.add('hidden');
+      hideError();
+    }
+
+    async function handleResetPassword() {
+      hideError();
+      const email = document.getElementById('reset-email').value.trim();
+      if (!email) { showError('Please enter your email address'); return; }
+
+      const btn = document.getElementById('reset-btn');
+      btn.disabled = true;
+      btn.textContent = 'Sending...';
+
+      try {
+        await authInstance.sendPasswordResetEmail(email);
+        const successBox = document.getElementById('reset-success');
+        document.getElementById('reset-success-text').textContent = 'Password reset email sent! Check your inbox.';
+        successBox.classList.remove('hidden');
+        successBox.classList.add('flex');
+      } catch (err) {
+        let msg = 'Failed to send reset email';
+        if (err.code === 'auth/user-not-found') msg = 'No account found with this email';
+        else if (err.code === 'auth/invalid-email') msg = 'Please enter a valid email address';
+        else if (err.code === 'auth/too-many-requests') msg = 'Too many requests. Please try again later';
+        showError(msg);
+      }
+
+      btn.disabled = false;
+      btn.textContent = 'Send Reset Link';
     }
 
     async function handleAuth(e) {
