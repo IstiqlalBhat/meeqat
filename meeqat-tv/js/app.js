@@ -184,7 +184,10 @@ const MeeqatTV = (() => {
     var target = document.getElementById('qr-target');
     if (!target) return;
 
-    var pairUrl = MeeqatAPI.getBackendUrl() + '/api/tv/pair?code=' + pairCode;
+    var backend = MeeqatAPI.getBackendUrl();
+    var pairUrl = backend
+      ? backend + '/api/tv/pair?code=' + pairCode
+      : 'meeqat://pair?code=' + pairCode;
 
     // Clear previous content
     target.innerHTML = '';
