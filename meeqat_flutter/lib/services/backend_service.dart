@@ -11,6 +11,7 @@ class BackendService {
 
   // ── Offline cache key helpers ──
   static String _cacheKey(int masjidId, String date) => 'times_${masjidId}_$date';
+  static String _jumuahCacheKey(int masjidId) => 'jumuah_$masjidId';
   static const _bulkMetaPrefix = 'bulk_meta_';
 
   Future<List<Masjid>> fetchMasjids() async {
@@ -34,32 +35,66 @@ class BackendService {
   }
 
   Future<List<PrayerTime>> fetchTimes(int masjidId, {String? date, int dayOffset = 0}) async {
-    var url = '$baseUrl/api/masjids/$masjidId/times';
-    if (date != null) url += '?date=$date';
-    final res = await http.get(Uri.parse(url));
-    if (res.statusCode == 200) {
-      final data = jsonDecode(res.body);
-      final timesMap = data['times'] as Map<String, dynamic>;
-      return Prayer.values.map((p) {
-        final entry = timesMap[p.name];
-        if (entry != null) {
-          return PrayerTime.fromJson(p, entry as Map<String, dynamic>, dayOffset: dayOffset);
-        }
-        return PrayerTime(prayer: p, dayOffset: dayOffset);
-      }).toList();
+    final dateStr = date ?? DateFormat('yyyy-MM-dd').format(DateTime.now());
+    try {
+      var url = '$baseUrl/api/masjids/$masjidId/times?date=$dateStr';
+      final res = await http.get(Uri.parse(url));
+      if (res.statusCode == 200) {
+        final data = jsonDecode(res.body);
+        final timesMap = data['times'] as Map<String, dynamic>;
+        // Also cache the result for offline use
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString(_cacheKey(masjidId, dateStr), jsonEncode(timesMap));
+        return Prayer.values.map((p) {
+          final entry = timesMap[p.name];
+          if (entry != null) {
+            return PrayerTime.fromJson(p, entry as Map<String, dynamic>, dayOffset: dayOffset);
+          }
+          return PrayerTime(prayer: p, dayOffset: dayOffset);
+        }).toList();
+      }
+    } catch (_) {
+      // Network failed — try offline cache
+      final cached = await getCachedTimes(masjidId, dateStr, dayOffset: dayOffset);
+      if (cached != null) return cached;
+      // Try nearest cached day as last resort
+      final nearest = await findNearestCachedDay(masjidId, dateStr, dayOffset: dayOffset);
+      if (nearest != null) return nearest;
     }
     throw Exception('Failed to load times');
   }
 
   Future<JumuahTimes?> fetchJumuah(int masjidId) async {
-    final res = await http.get(Uri.parse('$baseUrl/api/masjids/$masjidId/jumuah'));
-    if (res.statusCode == 200) {
-      final data = jsonDecode(res.body);
-      if (data['jumuah'] != null) {
-        return JumuahTimes.fromJson(data['jumuah']);
+    try {
+      final res = await http.get(Uri.parse('$baseUrl/api/masjids/$masjidId/jumuah'));
+      if (res.statusCode == 200) {
+        final data = jsonDecode(res.body);
+        if (data['jumuah'] != null) {
+          final jumuah = JumuahTimes.fromJson(data['jumuah']);
+          // Cache for offline use
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setString(_jumuahCacheKey(masjidId), jsonEncode(jumuah.toJson()));
+          return jumuah;
+        }
       }
+    } catch (_) {
+      // Network failed — try offline cache
+      final cached = await getCachedJumuah(masjidId);
+      if (cached != null) return cached;
     }
     return null;
+  }
+
+  /// Reads cached Jumuah times from SharedPreferences.
+  static Future<JumuahTimes?> getCachedJumuah(int masjidId) async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString(_jumuahCacheKey(masjidId));
+    if (raw == null) return null;
+    try {
+      return JumuahTimes.fromJson(jsonDecode(raw) as Map<String, dynamic>);
+    } catch (_) {
+      return null;
+    }
   }
 
   Future<List<Announcement>> fetchAnnouncements(int masjidId) async {
@@ -93,6 +128,22 @@ class BackendService {
       final timesJson = jsonEncode(entry.value);
       await prefs.setString(_cacheKey(masjidId, date), timesJson);
       stored++;
+    }
+
+    // Also fetch and cache Jumuah times during bulk download
+    try {
+      final jumuahRes = await http.get(Uri.parse('$baseUrl/api/masjids/$masjidId/jumuah'));
+      if (jumuahRes.statusCode == 200) {
+        final jumuahData = jsonDecode(jumuahRes.body);
+        if (jumuahData['jumuah'] != null) {
+          await prefs.setString(
+            _jumuahCacheKey(masjidId),
+            jsonEncode(jumuahData['jumuah']),
+          );
+        }
+      }
+    } catch (_) {
+      // Non-critical — Jumuah cache is best-effort
     }
 
     // Store download metadata

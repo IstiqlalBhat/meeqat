@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../models/prayer_time.dart';
 import '../services/prayer_provider.dart';
@@ -18,6 +19,14 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
+  int _selectedDays = 180;
+  static const _durationOptions = [
+    (days: 30, label: '1 Month'),
+    (days: 90, label: '3 Months'),
+    (days: 180, label: '6 Months'),
+    (days: 365, label: '1 Year'),
+  ];
+
   Future<void> _handleNotificationsToggle(bool value, PrayerProvider provider) async {
     if (value) {
       final granted = await NotificationService.requestPermission();
@@ -408,6 +417,148 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                   ],
                 ),
+              ),
+            ),
+
+            // ── Offline Timetable ──
+            _sectionLabel('Offline Timetable'),
+            _card(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        width: 40, height: 40,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(12),
+                          color: cs.sageAccent.withValues(alpha: 0.12),
+                        ),
+                        child: Icon(Icons.download_rounded, size: 20, color: cs.sageAccent),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('Download Prayer Times', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: cs.onSurface)),
+                            const SizedBox(height: 2),
+                            Text(
+                              'Save timetable for offline use',
+                              style: TextStyle(fontSize: 12, color: cs.hintText),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Duration selector
+                  Padding(
+                    padding: const EdgeInsets.only(left: 54),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: _durationOptions.map((opt) {
+                            final selected = _selectedDays == opt.days;
+                            return GestureDetector(
+                              onTap: () => setState(() => _selectedDays = opt.days),
+                              child: AnimatedContainer(
+                                duration: const Duration(milliseconds: 200),
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                                decoration: BoxDecoration(
+                                  color: selected ? cs.sageAccent.withValues(alpha: 0.12) : Theme.of(context).scaffoldBackgroundColor,
+                                  borderRadius: BorderRadius.circular(10),
+                                  border: Border.all(
+                                    color: selected ? cs.sageAccent.withValues(alpha: 0.5) : cs.outline,
+                                  ),
+                                ),
+                                child: Text(
+                                  opt.label,
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                                    color: selected ? cs.sageDarkAccent : cs.onSurfaceVariant,
+                                  ),
+                                ),
+                              ),
+                            );
+                          }).toList(),
+                        ),
+                        const SizedBox(height: 14),
+
+                        // Download button
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton(
+                            onPressed: (!provider.hasMasjid || provider.isDownloading)
+                                ? null
+                                : () => provider.downloadBulkTimes(_selectedDays),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: cs.sageDarkAccent,
+                              foregroundColor: Colors.white,
+                              disabledBackgroundColor: cs.sageDarkAccent.withValues(alpha: 0.3),
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              elevation: 0,
+                            ),
+                            child: provider.isDownloading
+                                ? const SizedBox(
+                                    width: 20, height: 20,
+                                    child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                                  )
+                                : Text(
+                                    'Download ${_durationOptions.firstWhere((o) => o.days == _selectedDays).label}',
+                                    style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
+                                  ),
+                          ),
+                        ),
+
+                        // Error message
+                        if (provider.downloadError != null) ...[
+                          const SizedBox(height: 10),
+                          Text(
+                            provider.downloadError!,
+                            style: const TextStyle(fontSize: 12, color: Colors.redAccent),
+                          ),
+                        ],
+
+                        // Success message
+                        if (provider.lastDownloadStored != null && provider.downloadError == null && !provider.isDownloading) ...[
+                          const SizedBox(height: 10),
+                          Text(
+                            '${provider.lastDownloadStored} days downloaded successfully',
+                            style: TextStyle(fontSize: 12, color: cs.sageAccent, fontWeight: FontWeight.w600),
+                          ),
+                        ],
+
+                        // Last download metadata
+                        if (provider.lastBulkMeta != null) ...[
+                          const SizedBox(height: 8),
+                          Builder(builder: (_) {
+                            final meta = provider.lastBulkMeta!;
+                            final ts = meta['timestamp'] as int?;
+                            final stored = meta['stored'] as int?;
+                            final days = meta['days'] as int?;
+                            if (ts == null) return const SizedBox.shrink();
+                            final date = DateTime.fromMillisecondsSinceEpoch(ts);
+                            final dateStr = DateFormat('MMM d, yyyy').format(date);
+                            final timeStr = DateFormat('h:mm a').format(date);
+                            final label = _durationOptions.where((o) => o.days == days).firstOrNull?.label ?? '$days days';
+                            return Text(
+                              'Last download: ${stored ?? '?'} days ($label)\n$dateStr at $timeStr',
+                              style: TextStyle(fontSize: 11, color: cs.hintText, height: 1.5),
+                            );
+                          }),
+                        ],
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ),
 

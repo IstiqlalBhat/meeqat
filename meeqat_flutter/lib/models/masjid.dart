@@ -58,6 +58,12 @@ class JumuahTimes {
     firstJamaat: json['first_jamaat'] as String?,
     secondJamaat: json['second_jamaat'] as String?,
   );
+
+  Map<String, dynamic> toJson() => {
+    'khutbah_time': khutbahTime,
+    'first_jamaat': firstJamaat,
+    'second_jamaat': secondJamaat,
+  };
 }
 
 class Announcement {

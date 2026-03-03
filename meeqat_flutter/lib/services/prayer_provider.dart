@@ -32,6 +32,12 @@ class PrayerProvider extends ChangeNotifier {
   bool ramadanTilesEnabled = true;
   String ramadanTileSize = 'small';
 
+  // Offline download state
+  bool isDownloading = false;
+  String? downloadError;
+  int? lastDownloadStored;
+  Map<String, dynamic>? lastBulkMeta;
+
   bool get isViewingToday {
     final now = DateTime.now();
     return selectedDate.year == now.year &&
@@ -172,6 +178,7 @@ class PrayerProvider extends ChangeNotifier {
     notifyListeners();
     await loadTimes();
     await _loadNotificationTimings();
+    await loadBulkMeta();
   }
 
   // ── Notification helpers ──
@@ -228,6 +235,37 @@ class PrayerProvider extends ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('ramadan_tile_size', value);
     ramadanTileSize = value;
+    notifyListeners();
+  }
+
+  // ── Offline timetable download ──
+
+  Future<void> downloadBulkTimes(int days) async {
+    if (!hasMasjid) return;
+    isDownloading = true;
+    downloadError = null;
+    notifyListeners();
+
+    try {
+      final service = BackendService(baseUrl: backendUrl);
+      final from = DateFormat('yyyy-MM-dd').format(DateTime.now());
+      lastDownloadStored = await service.fetchBulkTimes(
+        selectedMasjidId,
+        fromDate: from,
+        days: days,
+      );
+      lastBulkMeta = await BackendService.getBulkDownloadMeta(selectedMasjidId);
+    } catch (e) {
+      downloadError = e.toString().replaceFirst('Exception: ', '');
+    }
+
+    isDownloading = false;
+    notifyListeners();
+  }
+
+  Future<void> loadBulkMeta() async {
+    if (!hasMasjid) return;
+    lastBulkMeta = await BackendService.getBulkDownloadMeta(selectedMasjidId);
     notifyListeners();
   }
 
