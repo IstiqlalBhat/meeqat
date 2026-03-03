@@ -1,4 +1,5 @@
 const admin = require('firebase-admin');
+const { Storage } = require('@google-cloud/storage');
 const fs = require('fs');
 const path = require('path');
 
@@ -29,7 +30,15 @@ if (!admin.apps.length) {
   });
 }
 
-const bucket = admin.storage().bucket();
+// Use @google-cloud/storage directly with explicit credentials
+// so that generateSignedUrl() has access to the private key for signing.
+// admin.storage().bucket() doesn't always propagate credentials properly
+// on serverless platforms (Vercel), causing signed URL generation to fail.
+const storage = new Storage({
+  credentials: serviceAccount,
+  projectId: serviceAccount.project_id,
+});
+const bucket = storage.bucket(bucketName);
 const auth = admin.auth();
 
 // Set CORS on the bucket so browsers can PUT files directly
