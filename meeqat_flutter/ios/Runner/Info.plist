@@ -49,6 +49,8 @@
 	</dict>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>Meeqat needs camera access to scan the QR code on your TV display.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>Meeqat needs your location to calculate the Qibla direction.</string>
 	<key>NSMotionUsageDescription</key>

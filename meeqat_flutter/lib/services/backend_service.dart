@@ -64,4 +64,20 @@ class BackendService {
     }
     return [];
   }
+
+  /// Pair a TV display device with a masjid using the pair code from QR scan.
+  /// The [qrData] is the full URL from the QR code, e.g.
+  /// "https://server/api/tv/pair?code=123456"
+  Future<Map<String, dynamic>> pairTvDevice(String pairCode, int masjidId) async {
+    final res = await http.post(
+      Uri.parse('$baseUrl/api/tv/pair'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'pair_code': pairCode, 'masjid_id': masjidId}),
+    );
+    final data = jsonDecode(res.body);
+    if (res.statusCode == 200) {
+      return data;
+    }
+    throw Exception(data['error'] ?? 'Failed to pair TV device');
+  }
 }

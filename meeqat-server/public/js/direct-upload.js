@@ -1,22 +1,22 @@
 /**
- * Direct browser-to-Firebase-Storage uploads via signed URLs.
+ * Direct browser-to-Firebase-Storage uploads via REST API.
  * Bypasses Vercel's 4.5MB payload limit entirely — files go
- * straight to Google Cloud Storage at full quality.
+ * straight to Firebase Storage at full quality.
  *
  * Flow:
- *  1. POST /admin/get-upload-url  → { uploadUrl, filePath }
- *  2. PUT  uploadUrl (direct to GCS, bypasses Vercel)
- *  3. POST /admin/finalize-upload → { url }  (makes file public)
+ *  1. POST /admin/get-upload-url  → { accessToken, filePath, bucket }
+ *  2. POST firebasestorage.googleapis.com (direct upload with Bearer token)
+ *  3. Response includes downloadTokens → construct public URL
  */
 
 /**
  * Upload a file directly to Firebase Storage.
  * @param {File} file
  * @param {string} category - 'profile' or 'announcements'
- * @returns {Promise<string>} The public/signed URL of the uploaded file
+ * @returns {Promise<string>} The public download URL of the uploaded file
  */
 async function uploadDirect(file, category) {
-  // 1. Get a signed upload URL from our server (tiny JSON request)
+  // 1. Get upload credentials from our server (tiny JSON request)
   var res = await fetch('/admin/get-upload-url', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -29,37 +29,43 @@ async function uploadDirect(file, category) {
 
   if (!res.ok) {
     var err = await res.json().catch(function() { return { error: 'Server error' }; });
-    throw new Error(err.error || 'Failed to get upload URL');
+    throw new Error(err.error || 'Failed to get upload credentials');
   }
 
   var data = await res.json();
-  var uploadUrl = data.uploadUrl;
+  var accessToken = data.accessToken;
   var filePath = data.filePath;
+  var bucketName = data.bucket;
+  var contentType = data.contentType;
 
-  // 2. Upload file directly to Google Cloud Storage (bypasses Vercel)
+  // 2. Upload directly to Firebase Storage REST API (bypasses Vercel)
+  var encodedPath = encodeURIComponent(filePath);
+  var uploadUrl = 'https://firebasestorage.googleapis.com/v0/b/' + bucketName + '/o?uploadType=media&name=' + encodedPath;
+
   var uploadRes = await fetch(uploadUrl, {
-    method: 'PUT',
-    headers: { 'Content-Type': file.type || 'application/octet-stream' },
+    method: 'POST',
+    headers: {
+      'Content-Type': contentType,
+      'Authorization': 'Bearer ' + accessToken
+    },
     body: file
   });
 
   if (!uploadRes.ok) {
-    throw new Error('Upload to storage failed (' + uploadRes.status + ')');
+    var uploadErr = await uploadRes.text().catch(function() { return 'Unknown error'; });
+    throw new Error('Upload to storage failed (' + uploadRes.status + '): ' + uploadErr);
   }
 
-  // 3. Finalize: make the file publicly accessible
-  var finalRes = await fetch('/admin/finalize-upload', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ filePath: filePath })
-  });
+  var uploadData = await uploadRes.json();
 
-  if (!finalRes.ok) {
-    throw new Error('Failed to finalize upload');
+  // 3. Construct the public download URL from the response
+  var downloadToken = uploadData.downloadTokens;
+  if (downloadToken) {
+    return 'https://firebasestorage.googleapis.com/v0/b/' + bucketName + '/o/' + encodedPath + '?alt=media&token=' + downloadToken;
   }
 
-  var finalData = await finalRes.json();
-  return finalData.url;
+  // Fallback: use alt=media URL (works if bucket allows public reads)
+  return 'https://firebasestorage.googleapis.com/v0/b/' + bucketName + '/o/' + encodedPath + '?alt=media';
 }
 
 /**
@@ -98,7 +104,7 @@ function setupDirectUpload(formEl, fileInputName, category) {
     }
 
     try {
-      // Upload file directly to storage + finalize
+      // Upload file directly to storage
       var imageUrl = await uploadDirect(pendingFile, category);
 
       // Build FormData WITHOUT the file — just text fields + the URL

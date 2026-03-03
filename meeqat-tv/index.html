@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=1920, initial-scale=1.0">
+  <title>Meeqat - Prayer Times Display</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#1a0e08">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="screen-orientation" content="landscape">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700;800;900&family=Amiri:wght@400;700&family=Inter:wght@300;400;500;600;700;800;900&family=Noto+Naskh+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css?v=4">
+</head>
+<body>
+  <!-- ============================================ -->
+  <!-- PAIRING SCREEN -->
+  <!-- ============================================ -->
+  <div id="pairing-screen" class="screen active">
+    <div class="pairing-bg"></div>
+    <div class="pairing-container">
+      <div class="pairing-ornament top-left"></div>
+      <div class="pairing-ornament top-right"></div>
+      <div class="pairing-ornament bottom-left"></div>
+      <div class="pairing-ornament bottom-right"></div>
+
+      <div class="pairing-header">
+        <div class="pairing-bismillah">&#xFDFD;</div>
+        <h1 class="pairing-title">Meeqat</h1>
+        <p class="pairing-subtitle">Prayer Times Display</p>
+      </div>
+
+      <div class="pairing-body">
+        <p class="pairing-instruction">Scan the QR code with the Meeqat app to pair this display</p>
+        <div class="qr-frame">
+          <div class="qr-corner tl"></div>
+          <div class="qr-corner tr"></div>
+          <div class="qr-corner bl"></div>
+          <div class="qr-corner br"></div>
+          <div id="qr-target"></div>
+        </div>
+        <div class="pair-code-display">
+          <span class="pair-code-label">Pair Code:</span>
+          <span class="pair-code-value" id="pair-code-value">------</span>
+        </div>
+        <div class="pairing-status" id="pairing-status">Waiting for connection...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================ -->
+  <!-- MAIN PRAYER DISPLAY -->
+  <!-- ============================================ -->
+  <div id="main-screen" class="screen">
+    <!-- Background layers -->
+    <div class="bg-wood"></div>
+    <div class="bg-pattern"></div>
+    <div class="bg-vignette"></div>
+
+    <!-- Top Header Bar -->
+    <header class="top-header">
+      <!-- Sunrise Badge -->
+      <div class="sun-badge sunrise-badge">
+        <div class="sun-badge-label">SUNRISE</div>
+        <svg class="sun-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="4"/>
+          <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/>
+          <path d="M8 20h8" stroke-width="2.5"/>
+          <path d="M12 16v4"/>
+        </svg>
+        <div class="sun-badge-time" id="sunrise-time">--:--</div>
+      </div>
+
+      <!-- Center Clock -->
+      <div class="clock-section">
+        <div class="clock-diamond">
+          <div class="clock-diamond-inner">
+            <div class="clock-glow"></div>
+            <div class="clock-time" id="current-time">12:00</div>
+            <div class="clock-ampm" id="current-ampm">PM</div>
+          </div>
+        </div>
+        <div class="clock-date-bar">
+          <span id="current-date">THURSDAY, AUG 03</span>
+          <span class="date-separator">|</span>
+          <span id="hijri-date">16 MUHARRAM</span>
+        </div>
+        <div class="masjid-emblem">
+          <div class="masjid-emblem-icon" id="masjid-logo-container">
+            <svg viewBox="0 0 64 64" fill="currentColor">
+              <path d="M32 4c-1 0-2 .5-2.5 1.5L22 18h-6l-4 8h-2l-4 8h4v22h8V42h4v14h8V42h4v14h8V42h4v14h8V34h4l-4-8h-2l-4-8h-6l-7.5-12.5C34 4.5 33 4 32 4zm0 6l5 8H27l5-8z"/>
+            </svg>
+          </div>
+          <div class="masjid-emblem-name" id="masjid-name">Masjid Name</div>
+        </div>
+      </div>
+
+      <!-- Sunset Badge -->
+      <div class="sun-badge sunset-badge">
+        <div class="sun-badge-label">SUNSET</div>
+        <svg class="sun-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="4"/>
+          <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/>
+          <path d="M8 20h8" stroke-width="2.5"/>
+          <path d="M12 20v-4"/>
+        </svg>
+        <div class="sun-badge-time" id="sunset-time">--:--</div>
+      </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="main-content">
+      <!-- Prayer Times Table -->
+      <section class="prayer-table-section">
+        <!-- Table Header -->
+        <div class="table-header">
+          <div class="th-name"></div>
+          <div class="th-starts">STARTS</div>
+          <div class="th-athan">ATHAN</div>
+          <div class="th-iqamah">IQAMAH</div>
+        </div>
+
+        <!-- Prayer Rows -->
+        <div class="prayer-rows" id="prayer-rows">
+          <div class="prayer-row" data-prayer="fajr">
+            <div class="prayer-name">
+              <span class="prayer-english">FAJR</span>
+              <span class="prayer-arabic">&#x0627;&#x0644;&#x0641;&#x062C;&#x0631;</span>
+            </div>
+            <div class="prayer-starts" data-field="starts">--:--</div>
+            <div class="prayer-athan" data-field="athan">--:--</div>
+            <div class="prayer-iqamah" data-field="iqamah">--:--</div>
+            <div class="prayer-row-glow"></div>
+          </div>
+
+          <div class="prayer-row" data-prayer="dhuhr">
+            <div class="prayer-name">
+              <span class="prayer-english">DHUHR</span>
+              <span class="prayer-arabic">&#x0627;&#x0644;&#x0638;&#x0647;&#x0631;</span>
+            </div>
+            <div class="prayer-starts" data-field="starts">--:--</div>
+            <div class="prayer-athan" data-field="athan">--:--</div>
+            <div class="prayer-iqamah" data-field="iqamah">--:--</div>
+            <div class="prayer-row-glow"></div>
+          </div>
+
+          <div class="prayer-row" data-prayer="asr">
+            <div class="prayer-name">
+              <span class="prayer-english">ASR</span>
+              <span class="prayer-arabic">&#x0627;&#x0644;&#x0639;&#x0635;&#x0631;</span>
+            </div>
+            <div class="prayer-starts" data-field="starts">--:--</div>
+            <div class="prayer-athan" data-field="athan">--:--</div>
+            <div class="prayer-iqamah" data-field="iqamah">--:--</div>
+            <div class="prayer-row-glow"></div>
+          </div>
+
+          <div class="prayer-row" data-prayer="maghrib">
+            <div class="prayer-name">
+              <span class="prayer-english">MAGHRIB</span>
+              <span class="prayer-arabic">&#x0627;&#x0644;&#x0645;&#x063A;&#x0631;&#x0628;</span>
+            </div>
+            <div class="prayer-starts" data-field="starts">--:--</div>
+            <div class="prayer-athan" data-field="athan">--:--</div>
+            <div class="prayer-iqamah" data-field="iqamah">--:--</div>
+            <div class="prayer-row-glow"></div>
+          </div>
+
+          <div class="prayer-row" data-prayer="isha">
+            <div class="prayer-name">
+              <span class="prayer-english">ISHA</span>
+              <span class="prayer-arabic">&#x0627;&#x0644;&#x0639;&#x0634;&#x0627;&#x0621;</span>
+            </div>
+            <div class="prayer-starts" data-field="starts">--:--</div>
+            <div class="prayer-athan" data-field="athan">--:--</div>
+            <div class="prayer-iqamah" data-field="iqamah">--:--</div>
+            <div class="prayer-row-glow"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Right Panel -->
+      <aside class="right-panel">
+        <!-- Current Prayer Card -->
+        <div class="current-prayer-card" id="current-prayer-card">
+          <div class="card-ornament top"></div>
+          <div class="card-ornament bottom"></div>
+          <div class="current-prayer-label">**CURRENT PRAYER**</div>
+          <div class="current-prayer-display">
+            <span class="current-prayer-arabic" id="current-prayer-arabic">&#x0627;&#x0644;&#x0638;&#x0647;&#x0631;</span>
+            <span class="current-prayer-english" id="current-prayer-english">DHUHR</span>
+          </div>
+          <div class="current-prayer-details" id="current-prayer-details">
+            STARTS: --:-- | --:-- | IQAMAH: --:--
+          </div>
+        </div>
+
+        <!-- Countdown Card -->
+        <div class="countdown-card" id="countdown-card">
+          <div class="card-ornament top"></div>
+          <div class="card-ornament bottom"></div>
+          <div class="countdown-label">NEXT IQAMAH IN</div>
+          <div class="countdown-display">
+            <div class="countdown-block">
+              <span class="countdown-value" id="countdown-hours">0</span>
+              <span class="countdown-unit">HR</span>
+            </div>
+            <div class="countdown-block">
+              <span class="countdown-value" id="countdown-minutes">00</span>
+              <span class="countdown-unit">MIN</span>
+            </div>
+          </div>
+        </div>
+      </aside>
+    </main>
+
+    <!-- Bottom Announcement Ticker -->
+    <footer class="ticker-bar">
+      <div class="ticker-border-top"></div>
+      <div class="ticker-track">
+        <div class="ticker-content" id="ticker-content">
+          <span class="ticker-placeholder">Loading announcements...</span>
+        </div>
+      </div>
+      <div class="ticker-logo">
+        <span class="ticker-logo-text" id="ticker-masjid-name">MEEQAT</span>
+      </div>
+    </footer>
+  </div>
+
+  <!-- Force clear old service worker caches and re-register -->
+  <script>
+    (function() {
+      if (!('serviceWorker' in navigator)) return;
+      // Delete all old caches
+      if (typeof caches !== 'undefined') {
+        caches.keys().then(function(keys) {
+          keys.forEach(function(key) {
+            if (key.indexOf('v3') === -1) {
+              console.log('Deleting old cache:', key);
+              caches.delete(key);
+            }
+          });
+        });
+      }
+      // Force update any existing service worker
+      navigator.serviceWorker.getRegistrations().then(function(regs) {
+        regs.forEach(function(reg) { reg.update(); });
+      });
+    })();
+  </script>
+  <!-- App Scripts -->
+  <script src="js/qr.js?v=4"></script>
+  <script src="js/api.js?v=4"></script>
+  <script src="js/app.js?v=4"></script>
+</body>
+</html>

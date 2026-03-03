@@ -227,4 +227,127 @@ router.get('/masjids/:id/announcements', async (req, res) => {
   res.json({ announcements: announcements || [] });
 });
 
+// ============================================================
+// TV Display Device Endpoints
+// ============================================================
+
+// POST /api/tv/register - TV registers itself with a pair code
+router.post('/tv/register', async (req, res) => {
+  const { device_id, pair_code } = req.body;
+
+  if (!device_id || !pair_code) {
+    return res.status(400).json({ error: 'device_id and pair_code are required' });
+  }
+
+  // Upsert the device record
+  const { data: existing } = await supabase
+    .from('tv_devices')
+    .select('*')
+    .eq('device_id', device_id)
+    .maybeSingle();
+
+  if (existing) {
+    // Update pair code and last_seen
+    const { error } = await supabase
+      .from('tv_devices')
+      .update({ pair_code, last_seen: new Date().toISOString() })
+      .eq('device_id', device_id);
+
+    if (error) return res.status(500).json({ error: error.message });
+    return res.json({ status: 'updated', device_id, pair_code });
+  }
+
+  const { error } = await supabase
+    .from('tv_devices')
+    .insert({ device_id, pair_code });
+
+  if (error) return res.status(500).json({ error: error.message });
+  res.json({ status: 'registered', device_id, pair_code });
+});
+
+// GET /api/tv/:deviceId/config - TV polls for its configuration
+router.get('/tv/:deviceId/config', async (req, res) => {
+  const { data: device, error } = await supabase
+    .from('tv_devices')
+    .select('*, masjids(id, name, address, city, state, country, latitude, longitude, image_url, calculation_method)')
+    .eq('device_id', req.params.deviceId)
+    .maybeSingle();
+
+  if (error) return res.status(500).json({ error: error.message });
+  if (!device) return res.status(404).json({ error: 'Device not found' });
+
+  // Update last_seen
+  await supabase
+    .from('tv_devices')
+    .update({ last_seen: new Date().toISOString() })
+    .eq('device_id', req.params.deviceId);
+
+  if (!device.masjid_id) {
+    return res.json({ paired: false, device_id: device.device_id, pair_code: device.pair_code });
+  }
+
+  res.json({
+    paired: true,
+    device_id: device.device_id,
+    masjid: device.masjids
+  });
+});
+
+// POST /api/tv/pair - Mobile app pairs a TV device with a masjid
+router.post('/tv/pair', async (req, res) => {
+  const { pair_code, masjid_id } = req.body;
+
+  if (!pair_code || !masjid_id) {
+    return res.status(400).json({ error: 'pair_code and masjid_id are required' });
+  }
+
+  const { data: device } = await supabase
+    .from('tv_devices')
+    .select('*')
+    .eq('pair_code', pair_code)
+    .maybeSingle();
+
+  if (!device) {
+    return res.status(404).json({ error: 'Invalid pair code. Please check the code on your TV display.' });
+  }
+
+  const { data: masjid } = await supabase
+    .from('masjids')
+    .select('id, name')
+    .eq('id', masjid_id)
+    .maybeSingle();
+
+  if (!masjid) {
+    return res.status(404).json({ error: 'Masjid not found' });
+  }
+
+  const { error } = await supabase
+    .from('tv_devices')
+    .update({
+      masjid_id,
+      paired_at: new Date().toISOString(),
+      pair_code: null // Clear pair code after successful pairing
+    })
+    .eq('device_id', device.device_id);
+
+  if (error) return res.status(500).json({ error: error.message });
+
+  res.json({
+    status: 'paired',
+    device_id: device.device_id,
+    masjid: { id: masjid.id, name: masjid.name }
+  });
+});
+
+// POST /api/tv/:deviceId/unpair - Unpair a TV device
+router.post('/tv/:deviceId/unpair', async (req, res) => {
+  const { error } = await supabase
+    .from('tv_devices')
+    .update({ masjid_id: null, paired_at: null })
+    .eq('device_id', req.params.deviceId);
+
+  if (error) return res.status(500).json({ error: error.message });
+  res.json({ status: 'unpaired' });
+});
+
 module.exports = router;

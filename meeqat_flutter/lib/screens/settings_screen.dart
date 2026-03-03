@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:mobile_scanner/mobile_scanner.dart';
 import '../models/prayer_time.dart';
 import '../services/prayer_provider.dart';
+import '../services/backend_service.dart';
 import '../services/notification_service.dart';
 import '../theme/app_theme.dart';
 import '../theme/theme_provider.dart';
@@ -228,6 +230,69 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
             ),
 
+            // ── TV Display ──
+            _sectionLabel('TV Display'),
+            _card(
+              child: GestureDetector(
+                onTap: () {
+                  if (!provider.hasMasjid) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: const Text('Please select a masjid first'),
+                        backgroundColor: AppTheme.goldDark,
+                        behavior: SnackBarBehavior.floating,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                    );
+                    return;
+                  }
+                  _openTvScanner(provider);
+                },
+                behavior: HitTestBehavior.opaque,
+                child: Row(
+                  children: [
+                    Container(
+                      width: 40, height: 40,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(12),
+                        color: AppTheme.duckLight.withValues(alpha: 0.2),
+                      ),
+                      child: Icon(Icons.tv_rounded, size: 20, color: cs.duckDarkAccent),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Sync to TV', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: cs.onSurface)),
+                          const SizedBox(height: 2),
+                          Text(
+                            'Scan QR code on your TV display',
+                            style: TextStyle(fontSize: 12, color: cs.hintText),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: cs.duckDarkAccent.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.qr_code_scanner_rounded, size: 16, color: cs.duckDarkAccent),
+                          const SizedBox(width: 6),
+                          Text('Scan', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: cs.duckDarkAccent)),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
             // ── About ──
             _sectionLabel('About'),
             _card(
@@ -260,6 +325,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ],
         );
       },
+    );
+  }
+
+  void _openTvScanner(PrayerProvider provider) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => _TvScannerScreen(
+          backendUrl: provider.backendUrl,
+          masjidId: provider.selectedMasjidId,
+          masjidName: provider.selectedMasjidName,
+        ),
+      ),
     );
   }
 
@@ -493,4 +570,320 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ],
     );
   }
+}
+
+// ─────────────────────────────────────────────────────────────
+// TV QR Scanner Screen
+// ─────────────────────────────────────────────────────────────
+
+class _TvScannerScreen extends StatefulWidget {
+  final String backendUrl;
+  final int masjidId;
+  final String masjidName;
+
+  const _TvScannerScreen({
+    required this.backendUrl,
+    required this.masjidId,
+    required this.masjidName,
+  });
+
+  @override
+  State<_TvScannerScreen> createState() => _TvScannerScreenState();
+}
+
+class _TvScannerScreenState extends State<_TvScannerScreen> {
+  final MobileScannerController _scannerController = MobileScannerController(
+    detectionSpeed: DetectionSpeed.normal,
+    facing: CameraFacing.back,
+  );
+  bool _isProcessing = false;
+  bool _isPaired = false;
+  String? _errorMessage;
+
+  @override
+  void dispose() {
+    _scannerController.dispose();
+    super.dispose();
+  }
+
+  /// Extract pair code from QR URL like:
+  /// "https://server/api/tv/pair?code=123456"
+  String? _extractPairCode(String rawValue) {
+    try {
+      final uri = Uri.parse(rawValue);
+      // Check query parameter
+      final code = uri.queryParameters['code'];
+      if (code != null && code.length == 6) return code;
+
+      // Also handle if QR just contains a 6-digit code directly
+      if (RegExp(r'^\d{6}$').hasMatch(rawValue.trim())) {
+        return rawValue.trim();
+      }
+    } catch (_) {}
+    return null;
+  }
+
+  Future<void> _handleBarcode(BarcodeCapture capture) async {
+    if (_isProcessing || _isPaired) return;
+
+    final barcode = capture.barcodes.firstOrNull;
+    if (barcode == null || barcode.rawValue == null) return;
+
+    final pairCode = _extractPairCode(barcode.rawValue!);
+    if (pairCode == null) {
+      setState(() => _errorMessage = 'Invalid QR code. Please scan the code on the TV display.');
+      return;
+    }
+
+    setState(() {
+      _isProcessing = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final service = BackendService(baseUrl: widget.backendUrl);
+      await service.pairTvDevice(pairCode, widget.masjidId);
+
+      if (!mounted) return;
+      setState(() {
+        _isPaired = true;
+        _isProcessing = false;
+      });
+
+      // Show success then pop after delay
+      await Future.delayed(const Duration(seconds: 2));
+      if (mounted) Navigator.of(context).pop();
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _isProcessing = false;
+        _errorMessage = e.toString().replaceFirst('Exception: ', '');
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+
+    return Scaffold(
+      backgroundColor: Colors.black,
+      appBar: AppBar(
+        backgroundColor: Colors.black,
+        foregroundColor: Colors.white,
+        title: const Text('Scan TV Display', style: TextStyle(fontWeight: FontWeight.w600)),
+        centerTitle: true,
+        elevation: 0,
+      ),
+      body: Stack(
+        children: [
+          // Camera
+          MobileScanner(
+            controller: _scannerController,
+            onDetect: _handleBarcode,
+          ),
+
+          // Overlay with cutout
+          _buildScanOverlay(cs),
+
+          // Bottom info panel
+          Positioned(
+            left: 0, right: 0, bottom: 0,
+            child: Container(
+              padding: const EdgeInsets.fromLTRB(24, 24, 24, 48),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [Colors.transparent, Colors.black.withValues(alpha: 0.9), Colors.black],
+                ),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (_isPaired) ...[
+                    const Icon(Icons.check_circle_rounded, color: Color(0xFF4CAF50), size: 56),
+                    const SizedBox(height: 12),
+                    const Text(
+                      'TV Display Paired!',
+                      style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w700),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Connected to ${widget.masjidName}',
+                      style: TextStyle(color: Colors.white.withValues(alpha: 0.7), fontSize: 14),
+                    ),
+                  ] else if (_isProcessing) ...[
+                    const SizedBox(
+                      width: 40, height: 40,
+                      child: CircularProgressIndicator(color: Color(0xFFC9A84C), strokeWidth: 3),
+                    ),
+                    const SizedBox(height: 12),
+                    const Text(
+                      'Pairing...',
+                      style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600),
+                    ),
+                  ] else ...[
+                    Text(
+                      'Point your camera at the QR code\non the TV display',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: Colors.white.withValues(alpha: 0.9), fontSize: 16, fontWeight: FontWeight.w500),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Syncing with: ${widget.masjidName}',
+                      style: TextStyle(color: const Color(0xFFC9A84C).withValues(alpha: 0.8), fontSize: 13),
+                    ),
+                    if (_errorMessage != null) ...[
+                      const SizedBox(height: 12),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                        decoration: BoxDecoration(
+                          color: Colors.red.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: Colors.red.withValues(alpha: 0.3)),
+                        ),
+                        child: Text(
+                          _errorMessage!,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(color: Colors.redAccent, fontSize: 13),
+                        ),
+                      ),
+                    ],
+                  ],
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildScanOverlay(ColorScheme cs) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final scanSize = constraints.maxWidth * 0.65;
+        final left = (constraints.maxWidth - scanSize) / 2;
+        final top = (constraints.maxHeight - scanSize) / 2 - 40;
+
+        return Stack(
+          children: [
+            // Dark overlay with transparent cutout
+            ColorFiltered(
+              colorFilter: ColorFilter.mode(
+                Colors.black.withValues(alpha: 0.55),
+                BlendMode.srcOut,
+              ),
+              child: Stack(
+                children: [
+                  Container(
+                    decoration: const BoxDecoration(
+                      color: Colors.black,
+                      backgroundBlendMode: BlendMode.dstOut,
+                    ),
+                  ),
+                  Positioned(
+                    left: left,
+                    top: top,
+                    child: Container(
+                      width: scanSize,
+                      height: scanSize,
+                      decoration: BoxDecoration(
+                        color: Colors.red, // Any color works with srcOut
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            // Corner brackets
+            Positioned(
+              left: left - 2,
+              top: top - 2,
+              child: _cornerBracket(topLeft: true),
+            ),
+            Positioned(
+              right: left - 2,
+              top: top - 2,
+              child: _cornerBracket(topRight: true),
+            ),
+            Positioned(
+              left: left - 2,
+              bottom: constraints.maxHeight - top - scanSize - 2,
+              child: _cornerBracket(bottomLeft: true),
+            ),
+            Positioned(
+              right: left - 2,
+              bottom: constraints.maxHeight - top - scanSize - 2,
+              child: _cornerBracket(bottomRight: true),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _cornerBracket({
+    bool topLeft = false,
+    bool topRight = false,
+    bool bottomLeft = false,
+    bool bottomRight = false,
+  }) {
+    return SizedBox(
+      width: 36,
+      height: 36,
+      child: CustomPaint(
+        painter: _CornerPainter(
+          topLeft: topLeft,
+          topRight: topRight,
+          bottomLeft: bottomLeft,
+          bottomRight: bottomRight,
+        ),
+      ),
+    );
+  }
+}
+
+class _CornerPainter extends CustomPainter {
+  final bool topLeft, topRight, bottomLeft, bottomRight;
+
+  _CornerPainter({
+    this.topLeft = false,
+    this.topRight = false,
+    this.bottomLeft = false,
+    this.bottomRight = false,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = const Color(0xFFC9A84C)
+      ..strokeWidth = 3.5
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round;
+
+    const len = 28.0;
+
+    if (topLeft) {
+      canvas.drawLine(const Offset(0, len), Offset.zero, paint);
+      canvas.drawLine(Offset.zero, const Offset(len, 0), paint);
+    }
+    if (topRight) {
+      canvas.drawLine(Offset(size.width - len, 0), Offset(size.width, 0), paint);
+      canvas.drawLine(Offset(size.width, 0), Offset(size.width, len), paint);
+    }
+    if (bottomLeft) {
+      canvas.drawLine(Offset(0, size.height - len), Offset(0, size.height), paint);
+      canvas.drawLine(Offset(0, size.height), Offset(len, size.height), paint);
+    }
+    if (bottomRight) {
+      canvas.drawLine(Offset(size.width, size.height - len), Offset(size.width, size.height), paint);
+      canvas.drawLine(Offset(size.width - len, size.height), Offset(size.width, size.height), paint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

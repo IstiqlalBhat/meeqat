@@ -21,6 +21,7 @@ dependencies:
   hijri: ^3.0.0
   timezone: ^0.10.0
   cached_network_image: ^3.4.1
+  mobile_scanner: ^6.0.2
 
 dev_dependencies:
   flutter_test:

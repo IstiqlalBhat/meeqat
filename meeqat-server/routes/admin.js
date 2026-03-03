@@ -3,7 +3,7 @@ const fetch = require('node-fetch');
 const multer = require('multer');
 const path = require('path');
 const { supabase } = require('../db/supabase');
-const { bucket } = require('../db/firebase');
+const { bucket, bucketName, getAccessToken } = require('../db/firebase');
 const { requireAuth, loadMasjid, requireMasjid } = require('../middleware/auth');
 const { calculateIqamahFromRule } = require('../utils/iqamah');
 
@@ -438,18 +438,13 @@ router.post('/get-upload-url', requireMasjid, express.json(), async (req, res) =
   }
 
   try {
-    const file = bucket.file(filePath);
-    const [uploadUrl] = await file.generateSignedUrl({
-      version: 'v4',
-      action: 'write',
-      expires: Date.now() + 15 * 60 * 1000, // 15 minutes
-      contentType: contentType,
-    });
-
-    res.json({ uploadUrl, filePath });
+    // Get an OAuth2 access token for direct Firebase Storage REST API upload.
+    // This avoids generateSignedUrl() which fails on Vercel.
+    const accessToken = await getAccessToken();
+    res.json({ accessToken, filePath, bucket: bucketName, contentType });
   } catch (err) {
-    console.error('Signed URL error:', err);
-    res.status(500).json({ error: 'Failed to generate upload URL' });
+    console.error('Access token error:', err);
+    res.status(500).json({ error: 'Failed to generate upload credentials' });
   }
 });
 
