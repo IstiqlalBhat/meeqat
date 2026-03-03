@@ -215,7 +215,22 @@ router.get('/timings', requireMasjid, async (req, res) => {
   for (const o of (permanentOverrides || [])) overrideMap[o.prayer] = { ...o, type: 'permanent' };
   for (const o of (dateOverrides || [])) overrideMap[o.prayer] = { ...o, type: 'date' };
 
-  res.render('timings', { masjid, date, prayers, apiTimes, overrideMap });
+  // Fetch iqamah rules so the daily editor can show computed iqamah
+  const { data: iqamahRules } = await supabase
+    .from('iqamah_rules')
+    .select('prayer, rule_type, value, reference_prayer')
+    .eq('masjid_id', masjid.id);
+
+  const ruleMap = {};
+  for (const r of (iqamahRules || [])) ruleMap[r.prayer] = r;
+
+  // Compute rule-based iqamah for each prayer
+  const ruleIqamahMap = {};
+  for (const prayer of prayers) {
+    ruleIqamahMap[prayer] = calculateIqamahFromRule(ruleMap[prayer], apiTimes, prayer);
+  }
+
+  res.render('timings', { masjid, date, prayers, apiTimes, overrideMap, ruleIqamahMap });
 });
 
 router.post('/timings', requireMasjid, async (req, res) => {

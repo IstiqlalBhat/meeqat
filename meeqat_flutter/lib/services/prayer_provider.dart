@@ -6,6 +6,7 @@ import '../models/prayer_time.dart';
 import '../models/masjid.dart';
 import 'backend_service.dart';
 import 'notification_service.dart';
+import 'ramadan_service.dart';
 
 class PrayerProvider extends ChangeNotifier {
   List<PrayerTime> prayerTimes = [];
@@ -19,13 +20,17 @@ class PrayerProvider extends ChangeNotifier {
   Timer? _timer;
 
   // Settings
-  String backendUrl = 'https://clemsonmasjid.vercel.app';
+  String backendUrl = 'https://meeqatmain.vercel.app';
   int selectedMasjidId = 0;
   String selectedMasjidName = '';
 
   // Notification state
   bool notificationsEnabled = false;
   Map<String, int> notificationTimings = {};
+
+  // Ramadan state
+  bool ramadanTilesEnabled = true;
+  String ramadanTileSize = 'small';
 
   bool get isViewingToday {
     final now = DateTime.now();
@@ -148,6 +153,9 @@ class PrayerProvider extends ChangeNotifier {
 
   bool get isFriday => selectedDate.weekday == DateTime.friday;
 
+  bool get isRamadan => RamadanService.isRamadan();
+  int? get ramadanDay => RamadanService.ramadanDay();
+
   PrayerTime? get sunrise =>
       prayerTimes.where((p) => p.prayer == Prayer.sunrise).firstOrNull;
 
@@ -156,9 +164,11 @@ class PrayerProvider extends ChangeNotifier {
 
   Future<void> _loadSettings() async {
     final prefs = await SharedPreferences.getInstance();
-    backendUrl = prefs.getString('backendUrl') ?? 'https://clemsonmasjid.vercel.app';
+    backendUrl = prefs.getString('backendUrl') ?? 'https://meeqatmain.vercel.app';
     selectedMasjidId = prefs.getInt('selectedMasjidId') ?? 0;
     selectedMasjidName = prefs.getString('selectedMasjidName') ?? '';
+    ramadanTilesEnabled = prefs.getBool('ramadan_tiles_enabled') ?? true;
+    ramadanTileSize = prefs.getString('ramadan_tile_size') ?? 'small';
     notifyListeners();
     await loadTimes();
     await _loadNotificationTimings();
@@ -176,6 +186,12 @@ class PrayerProvider extends ChangeNotifier {
   int getNotificationTiming(String key) {
     if (key == 'jumuah') {
       return notificationTimings[key] ?? NotificationService.defaultJumuahTiming;
+    }
+    if (key == 'ramadan_sehri') {
+      return notificationTimings[key] ?? NotificationService.defaultSehriTiming;
+    }
+    if (key == 'ramadan_iftar') {
+      return notificationTimings[key] ?? NotificationService.defaultIftarTiming;
     }
     final isAdhan = key.startsWith('adhan_');
     return notificationTimings[key] ??
@@ -199,6 +215,20 @@ class PrayerProvider extends ChangeNotifier {
     } else {
       await NotificationService.cancelAll();
     }
+  }
+
+  Future<void> setRamadanTilesEnabled(bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('ramadan_tiles_enabled', value);
+    ramadanTilesEnabled = value;
+    notifyListeners();
+  }
+
+  Future<void> setRamadanTileSize(String value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('ramadan_tile_size', value);
+    ramadanTileSize = value;
+    notifyListeners();
   }
 
   Future<void> saveSettings() async {

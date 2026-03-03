@@ -135,12 +135,12 @@ class _NotificationTimingSheetState extends State<_NotificationTimingSheet> {
           const SizedBox(height: 20),
 
           if (widget.isJumuah) ...[
-            // Single dial for Jumuah
+            // Single dial for Jumuah / Ramadan reminders
             _dialSection(
-              label: "Before Jumu'ah",
+              label: 'Reminder before',
               controller: _iqamahController,
               onChanged: (index) {
-                widget.onChanged('jumuah', index);
+                widget.onChanged(widget.prayerName, index);
               },
             ),
           ] else ...[

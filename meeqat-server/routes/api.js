@@ -47,6 +47,52 @@ async function fetchAladhanTimes(lat, lng, method, date) {
   return null;
 }
 
+// Fetch an entire month of prayer times from Aladhan calendar API
+function getCalendarCacheKey(lat, lng, method, year, month) {
+  return `cal_${lat}_${lng}_${method}_${year}_${month}`;
+}
+
+async function fetchAladhanCalendar(lat, lng, method, year, month) {
+  const key = getCalendarCacheKey(lat, lng, method, year, month);
+  if (apiCache.has(key)) {
+    return apiCache.get(key);
+  }
+
+  const url = `https://api.aladhan.com/v1/calendar/${year}/${month}?latitude=${lat}&longitude=${lng}&method=${method}`;
+
+  try {
+    const response = await fetch(url);
+    const data = await response.json();
+
+    if (data.code === 200 && data.data) {
+      // data.data is an array of day objects
+      const result = {};
+      for (const day of data.data) {
+        const greg = day.date.gregorian;
+        // Aladhan returns date as "DD-MM-YYYY", convert to "YYYY-MM-DD"
+        const dateStr = `${greg.year}-${greg.month.number.toString().padStart(2, '0')}-${greg.day.padStart(2, '0')}`;
+        const timings = day.timings;
+        result[dateStr] = {
+          fajr: timings.Fajr,
+          sunrise: timings.Sunrise,
+          dhuhr: timings.Dhuhr,
+          asr: timings.Asr,
+          sunset: timings.Sunset,
+          maghrib: timings.Maghrib,
+          isha: timings.Isha
+        };
+      }
+      apiCache.set(key, result);
+      setTimeout(() => apiCache.delete(key), 24 * 60 * 60 * 1000);
+      return result;
+    }
+  } catch (err) {
+    console.error('Aladhan Calendar API error:', err.message);
+  }
+
+  return null;
+}
+
 // Haversine distance in km between two lat/lng points
 function haversineKm(lat1, lng1, lat2, lng2) {
   const R = 6371;
@@ -185,6 +231,142 @@ router.get('/masjids/:id/times', async (req, res) => {
     masjid_name: masjid.name,
     date,
     times
+  });
+});
+
+// GET /api/masjids/:id/times/bulk?from=YYYY-MM-DD&days=N
+router.get('/masjids/:id/times/bulk', async (req, res) => {
+  const { data: masjid } = await supabase
+    .from('masjids')
+    .select('*')
+    .eq('id', req.params.id)
+    .single();
+
+  if (!masjid) return res.status(404).json({ error: 'Masjid not found' });
+
+  const fromDate = req.query.from || new Date().toISOString().split('T')[0];
+  const days = Math.min(Math.max(parseInt(req.query.days) || 30, 1), 366);
+
+  const lat = masjid.latitude || 34.6834;
+  const lng = masjid.longitude || -82.8374;
+  const method = masjid.calculation_method;
+
+  // Determine which calendar months we need
+  const startDate = new Date(fromDate + 'T00:00:00');
+  const endDate = new Date(startDate);
+  endDate.setDate(endDate.getDate() + days - 1);
+
+  const monthsNeeded = new Set();
+  const cursor = new Date(startDate);
+  while (cursor <= endDate) {
+    const y = cursor.getFullYear();
+    const m = cursor.getMonth() + 1;
+    monthsNeeded.add(`${y}-${m}`);
+    cursor.setMonth(cursor.getMonth() + 1);
+    cursor.setDate(1);
+  }
+
+  // Fetch all needed calendar months in parallel
+  const calendarPromises = [];
+  for (const ym of monthsNeeded) {
+    const [y, m] = ym.split('-').map(Number);
+    calendarPromises.push(fetchAladhanCalendar(lat, lng, method, y, m));
+  }
+  const calendarResults = await Promise.all(calendarPromises);
+
+  // Merge all calendar months into one lookup
+  const allApiTimes = {};
+  for (const monthData of calendarResults) {
+    if (monthData) {
+      Object.assign(allApiTimes, monthData);
+    }
+  }
+
+  // Generate the list of dates we need
+  const dateList = [];
+  const d = new Date(startDate);
+  for (let i = 0; i < days; i++) {
+    dateList.push(d.toISOString().split('T')[0]);
+    d.setDate(d.getDate() + 1);
+  }
+
+  // Batch-fetch overrides from Supabase (all at once, not per-day)
+  const { data: allDateOverrides } = await supabase
+    .from('prayer_overrides')
+    .select('prayer, athan_time, iqamah_time, date')
+    .eq('masjid_id', masjid.id)
+    .in('date', dateList);
+
+  const { data: permanentOverrides } = await supabase
+    .from('prayer_overrides')
+    .select('prayer, athan_time, iqamah_time')
+    .eq('masjid_id', masjid.id)
+    .is('date', null);
+
+  const { data: iqamahRules } = await supabase
+    .from('iqamah_rules')
+    .select('prayer, rule_type, value, reference_prayer')
+    .eq('masjid_id', masjid.id);
+
+  // Build permanent override and rule maps (same for all days)
+  const permanentMap = {};
+  for (const o of (permanentOverrides || [])) permanentMap[o.prayer] = o;
+
+  const ruleMap = {};
+  for (const r of (iqamahRules || [])) ruleMap[r.prayer] = r;
+
+  // Index date-specific overrides by date
+  const dateOverridesByDate = {};
+  for (const o of (allDateOverrides || [])) {
+    if (!dateOverridesByDate[o.date]) dateOverridesByDate[o.date] = {};
+    dateOverridesByDate[o.date][o.prayer] = o;
+  }
+
+  // Build timetable for each date
+  const prayers = ['fajr', 'sunrise', 'dhuhr', 'asr', 'sunset', 'maghrib', 'isha'];
+  const timetable = {};
+
+  for (const date of dateList) {
+    const apiTimes = allApiTimes[date] || null;
+
+    // Merge overrides: permanent first, then date-specific
+    const overrideMap = {};
+    for (const p of prayers) {
+      if (permanentMap[p]) overrideMap[p] = permanentMap[p];
+    }
+    const dateOverrides = dateOverridesByDate[date] || {};
+    for (const p of prayers) {
+      if (dateOverrides[p]) overrideMap[p] = dateOverrides[p];
+    }
+
+    const times = {};
+    for (const prayer of prayers) {
+      const override = overrideMap[prayer];
+      const apiTime = apiTimes ? apiTimes[prayer] : null;
+
+      let iqamah = null;
+      if (override && override.iqamah_time) {
+        iqamah = override.iqamah_time;
+      } else if (ruleMap[prayer]) {
+        iqamah = calculateIqamahFromRule(ruleMap[prayer], apiTimes, prayer);
+      }
+
+      times[prayer] = {
+        athan: override && override.athan_time ? override.athan_time : (apiTime || null),
+        iqamah,
+        source: override && override.athan_time ? 'override' : 'api'
+      };
+    }
+
+    timetable[date] = times;
+  }
+
+  res.json({
+    masjid_id: masjid.id,
+    masjid_name: masjid.name,
+    from: fromDate,
+    days,
+    timetable
   });
 });
 

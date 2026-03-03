@@ -4,6 +4,7 @@ import 'package:timezone/data/latest_all.dart' as tz_data;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/prayer_time.dart';
 import '../models/masjid.dart';
+import 'ramadan_service.dart';
 
 class NotificationService {
   static final _plugin = FlutterLocalNotificationsPlugin();
@@ -13,6 +14,8 @@ class NotificationService {
   static const int defaultAdhanTiming = 0;
   static const int defaultIqamahTiming = 10;
   static const int defaultJumuahTiming = 10;
+  static const int defaultSehriTiming = 30;
+  static const int defaultIftarTiming = 5;
 
   static Future<void> init() async {
     if (_initialized) return;
@@ -54,12 +57,20 @@ class NotificationService {
   static String _adhanKey(String prayerName) => 'notify_adhan_$prayerName';
   static String _iqamahKey(String prayerName) => 'notify_iqamah_$prayerName';
   static String _jumuahKey() => 'notify_jumuah';
+  static String _sehriKey() => 'notify_ramadan_sehri';
+  static String _iftarKey() => 'notify_ramadan_iftar';
 
-  /// Get timing for a specific key (e.g. 'adhan_fajr', 'iqamah_fajr', 'jumuah').
+  /// Get timing for a specific key (e.g. 'adhan_fajr', 'iqamah_fajr', 'jumuah', 'ramadan_sehri', 'ramadan_iftar').
   static Future<int> getTimingForKey(String key) async {
     final prefs = await SharedPreferences.getInstance();
     if (key == 'jumuah') {
       return prefs.getInt(_jumuahKey()) ?? defaultJumuahTiming;
+    }
+    if (key == 'ramadan_sehri') {
+      return prefs.getInt(_sehriKey()) ?? defaultSehriTiming;
+    }
+    if (key == 'ramadan_iftar') {
+      return prefs.getInt(_iftarKey()) ?? defaultIftarTiming;
     }
     // key format: "adhan_fajr" or "iqamah_fajr"
     final prefKey = 'notify_$key';
@@ -72,6 +83,10 @@ class NotificationService {
     final prefs = await SharedPreferences.getInstance();
     if (key == 'jumuah') {
       await prefs.setInt(_jumuahKey(), minutes);
+    } else if (key == 'ramadan_sehri') {
+      await prefs.setInt(_sehriKey(), minutes);
+    } else if (key == 'ramadan_iftar') {
+      await prefs.setInt(_iftarKey(), minutes);
     } else {
       await prefs.setInt('notify_$key', minutes);
     }
@@ -87,6 +102,8 @@ class NotificationService {
       map['iqamah_${p.name}'] = prefs.getInt(_iqamahKey(p.name)) ?? defaultIqamahTiming;
     }
     map['jumuah'] = prefs.getInt(_jumuahKey()) ?? defaultJumuahTiming;
+    map['ramadan_sehri'] = prefs.getInt(_sehriKey()) ?? defaultSehriTiming;
+    map['ramadan_iftar'] = prefs.getInt(_iftarKey()) ?? defaultIftarTiming;
     return map;
   }
 
@@ -251,6 +268,47 @@ class NotificationService {
               id: 100,
               title: "Jumu'ah (\u062C\u0645\u0639\u0629)",
               body: "$jumuahTiming min until Jumu'ah",
+              dateTime: notifyAt,
+            );
+          }
+        }
+      }
+    }
+
+    // Ramadan notifications (Sehri & Iftar)
+    if (RamadanService.isRamadan()) {
+      // Sehri reminder — before Fajr athan
+      final sehriTiming = prefs.getInt(_sehriKey()) ?? defaultSehriTiming;
+      if (sehriTiming > 0) {
+        final fajr = prayerTimes
+            .where((p) => p.prayer == Prayer.fajr)
+            .firstOrNull;
+        if (fajr?.athanDate != null && fajr!.athanDate!.isAfter(now)) {
+          final notifyAt = fajr.athanDate!.subtract(Duration(minutes: sehriTiming));
+          if (notifyAt.isAfter(now)) {
+            await _scheduleOne(
+              id: 200,
+              title: 'Sehri Ending Soon',
+              body: '$sehriTiming min until Fajr — finish your sehri',
+              dateTime: notifyAt,
+            );
+          }
+        }
+      }
+
+      // Iftar reminder — before Maghrib athan
+      final iftarTiming = prefs.getInt(_iftarKey()) ?? defaultIftarTiming;
+      if (iftarTiming > 0) {
+        final maghrib = prayerTimes
+            .where((p) => p.prayer == Prayer.maghrib)
+            .firstOrNull;
+        if (maghrib?.athanDate != null && maghrib!.athanDate!.isAfter(now)) {
+          final notifyAt = maghrib.athanDate!.subtract(Duration(minutes: iftarTiming));
+          if (notifyAt.isAfter(now)) {
+            await _scheduleOne(
+              id: 201,
+              title: 'Iftar Time Soon',
+              body: '$iftarTiming min until Maghrib — prepare to break your fast',
               dateTime: notifyAt,
             );
           }

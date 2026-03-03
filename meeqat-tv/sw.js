@@ -3,8 +3,8 @@
    Offline-first caching strategy
    ============================================ */
 
-const STATIC_CACHE = 'meeqat-tv-static-v11';
-const DATA_CACHE = 'meeqat-tv-data-v11';
+const STATIC_CACHE = 'meeqat-tv-static-v12';
+const DATA_CACHE = 'meeqat-tv-data-v12';
 
 // Static assets to precache
 const STATIC_ASSETS = [
@@ -13,7 +13,8 @@ const STATIC_ASSETS = [
   '/css/styles.css',
   '/js/app.js',
   '/js/api.js',
-  '/manifest.json'
+  '/manifest.json',
+  '/icon.svg'
 ];
 
 // Install - precache static assets

@@ -8,6 +8,7 @@ import '../widgets/announcement_card.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/jumuah_banner.dart';
 import '../widgets/ornament_divider.dart';
+import '../widgets/ramadan_tiles.dart';
 import '../widgets/shimmer_loading.dart';
 
 
@@ -91,6 +92,10 @@ class _PrayerScreenState extends State<PrayerScreen> with SingleTickerProviderSt
                         const SizedBox(height: 10),
                         if (provider.isViewingToday) ...[
                           _countdownBar(provider),
+                          const SizedBox(height: 12),
+                        ],
+                        if (provider.isRamadan && provider.ramadanTilesEnabled) ...[
+                          RamadanTiles(tileSize: _parseTileSize(provider.ramadanTileSize)),
                           const SizedBox(height: 12),
                         ],
                         _prayerCard(provider),
@@ -767,5 +772,13 @@ class _PrayerScreenState extends State<PrayerScreen> with SingleTickerProviderSt
     final s = t % 60;
     if (h > 0) return '$h:${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
     return '${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
+  }
+
+  RamadanTileSize _parseTileSize(String size) {
+    switch (size) {
+      case 'medium': return RamadanTileSize.medium;
+      case 'large': return RamadanTileSize.large;
+      default: return RamadanTileSize.small;
+    }
   }
 }

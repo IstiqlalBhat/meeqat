@@ -5,6 +5,7 @@ import '../models/prayer_time.dart';
 import '../services/prayer_provider.dart';
 import '../services/backend_service.dart';
 import '../services/notification_service.dart';
+import '../services/ramadan_service.dart';
 import '../theme/app_theme.dart';
 import '../theme/theme_provider.dart';
 import '../widgets/notification_timing_sheet.dart';
@@ -63,6 +64,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
       currentIqamahTiming: provider.getNotificationTiming('jumuah'),
       prayerName: 'jumuah',
       isJumuah: true,
+      onChanged: (key, minutes) {
+        provider.setNotificationTiming(key, minutes);
+      },
+    );
+  }
+
+  void _openRamadanTimingSheet(String timingKey, String displayName, Color accentColor, PrayerProvider provider) {
+    showNotificationTimingSheet(
+      context: context,
+      displayName: displayName,
+      arabicName: timingKey == 'ramadan_sehri' ? 'سحور' : 'إفطار',
+      accentColor: accentColor,
+      currentAdhanTiming: 0,
+      currentIqamahTiming: provider.getNotificationTiming(timingKey),
+      prayerName: timingKey,
+      isJumuah: true, // single dial mode
       onChanged: (key, minutes) {
         provider.setNotificationTiming(key, minutes);
       },
@@ -230,6 +247,107 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
             ),
 
+            // ── Ramadan ──
+            if (RamadanService.isRamadan()) ...[
+              _sectionLabel('Ramadan'),
+              _card(
+                child: Column(
+                  children: [
+                    _toggleRow(
+                      icon: Icons.nightlight_round,
+                      iconColor: cs.goldAccent,
+                      iconBg: AppTheme.goldLight.withValues(alpha: 0.2),
+                      label: 'Ramadan Tiles',
+                      subtitle: provider.ramadanTilesEnabled ? 'Shown on home screen' : 'Hidden',
+                      value: provider.ramadanTilesEnabled,
+                      onChanged: (val) => provider.setRamadanTilesEnabled(val),
+                    ),
+                    if (provider.ramadanTilesEnabled) ...[
+                      Divider(color: cs.outline, height: 20),
+                      Row(
+                        children: [
+                          Container(
+                            width: 40, height: 40,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(12),
+                              color: cs.sageDarkAccent.withValues(alpha: 0.1),
+                            ),
+                            child: Icon(Icons.aspect_ratio_rounded, size: 20, color: cs.sageDarkAccent),
+                          ),
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text('Tile Size', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: cs.onSurface)),
+                                const SizedBox(height: 1),
+                                Text(
+                                  provider.ramadanTileSize[0].toUpperCase() + provider.ramadanTileSize.substring(1),
+                                  style: TextStyle(fontSize: 11, color: cs.hintText),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      Padding(
+                        padding: const EdgeInsets.only(left: 54),
+                        child: Wrap(
+                          spacing: 8,
+                          children: ['small', 'medium', 'large'].map((size) {
+                            final selected = provider.ramadanTileSize == size;
+                            return GestureDetector(
+                              onTap: () => provider.setRamadanTileSize(size),
+                              child: AnimatedContainer(
+                                duration: const Duration(milliseconds: 200),
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                                decoration: BoxDecoration(
+                                  color: selected ? cs.goldAccent.withValues(alpha: 0.12) : Theme.of(context).scaffoldBackgroundColor,
+                                  borderRadius: BorderRadius.circular(10),
+                                  border: Border.all(
+                                    color: selected ? cs.goldAccent.withValues(alpha: 0.5) : cs.outline,
+                                  ),
+                                ),
+                                child: Text(
+                                  size[0].toUpperCase() + size.substring(1),
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                                    color: selected ? cs.goldDarkAccent : cs.onSurfaceVariant,
+                                  ),
+                                ),
+                              ),
+                            );
+                          }).toList(),
+                        ),
+                      ),
+                    ],
+                    if (provider.notificationsEnabled) ...[
+                      Divider(color: cs.outline, height: 20),
+                      _ramadanNotifRow(
+                        icon: Icons.dark_mode_rounded,
+                        iconColor: cs.sageDarkAccent,
+                        label: 'Sehri Reminder',
+                        subtitle: 'Before Fajr athan',
+                        timingKey: 'ramadan_sehri',
+                        provider: provider,
+                      ),
+                      Divider(color: cs.outline.withValues(alpha: 0.5), height: 12, indent: 46),
+                      _ramadanNotifRow(
+                        icon: Icons.restaurant_rounded,
+                        iconColor: cs.goldAccent,
+                        label: 'Iftar Reminder',
+                        subtitle: 'Before Maghrib athan',
+                        timingKey: 'ramadan_iftar',
+                        provider: provider,
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ],
+
             // ── TV Display ──
             _sectionLabel('TV Display'),
             _card(
@@ -300,7 +418,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 children: [
                   _aboutRow(Icons.info_outline_rounded, 'Version', '1.0.0'),
                   Divider(color: cs.outline, height: 24),
-                  _aboutRow(Icons.favorite_rounded, 'Made with', 'Love', valueColor: const Color(0xFFD4626E)),
+                  _aboutRow(Icons.favorite_rounded, 'Made by', 'Istiqlal', valueColor: const Color(0xFFD4626E)),
                 ],
               ),
             ),
@@ -511,6 +629,72 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 fontSize: 12,
                 fontWeight: FontWeight.w500,
                 color: isActive ? cs.sageDarkAccent : cs.hintText.withValues(alpha: 0.5),
+              ),
+            ),
+            const SizedBox(width: 4),
+            Icon(Icons.chevron_right_rounded, size: 16, color: cs.hintText.withValues(alpha: 0.4)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ── Ramadan notification row ──
+
+  Widget _ramadanNotifRow({
+    required IconData icon,
+    required Color iconColor,
+    required String label,
+    required String subtitle,
+    required String timingKey,
+    required PrayerProvider provider,
+  }) {
+    final cs = Theme.of(context).colorScheme;
+    final timing = provider.getNotificationTiming(timingKey);
+    final isActive = timing > 0;
+    final timingLabel = timing == 0 ? 'Off' : '${timing}m';
+
+    return GestureDetector(
+      onTap: () => _openRamadanTimingSheet(timingKey, label, iconColor, provider),
+      behavior: HitTestBehavior.opaque,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        child: Row(
+          children: [
+            Container(
+              width: 34, height: 34,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(10),
+                color: iconColor.withValues(alpha: isActive ? 0.12 : 0.06),
+              ),
+              child: Icon(icon, size: 16, color: iconColor.withValues(alpha: isActive ? 0.8 : 0.3)),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    label,
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: isActive ? cs.onSurface : cs.hintText,
+                    ),
+                  ),
+                  Text(
+                    subtitle,
+                    style: TextStyle(fontSize: 10, color: cs.hintText.withValues(alpha: 0.7)),
+                  ),
+                ],
+              ),
+            ),
+            Text(
+              timingLabel,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+                color: isActive ? iconColor : cs.hintText.withValues(alpha: 0.5),
               ),
             ),
             const SizedBox(width: 4),

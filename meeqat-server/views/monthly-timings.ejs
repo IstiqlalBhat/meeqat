@@ -174,17 +174,20 @@
                       if (typeof ruleIqamahMap !== 'undefined' && ruleIqamahMap[dateStr] && ruleIqamahMap[dateStr][prayer]) {
                         ruleIqamah = ruleIqamahMap[dateStr][prayer];
                       }
-                      var iqamahPlaceholder = ruleIqamah || '';
+                      // If no override but rule exists, show rule value as the visible value
+                      var iqamahDisplay = iqamahVal || ruleIqamah || '';
+                      var iqamahCellType = cellType;
+                      if (!iqamahVal && ruleIqamah) iqamahCellType = 'rule';
                     %>
                     <td class="px-1 py-1">
                       <input type="time"
                         class="monthly-cell w-full text-center text-xs px-1 py-1.5 rounded border border-transparent focus:border-sage-400 focus:outline-none focus:ring-1 focus:ring-sage-400/30
-                          <%= cellType === 'date' ? 'bg-gold-300/15' : (cellType === 'permanent' ? 'bg-duck-300/15' : 'bg-transparent') %>"
+                          <%= iqamahCellType === 'date' ? 'bg-gold-300/15' : (iqamahCellType === 'permanent' ? 'bg-duck-300/15' : (iqamahCellType === 'rule' ? 'bg-sage-300/15' : 'bg-transparent')) %>"
                         data-date="<%= dateStr %>" data-prayer="<%= prayer %>" data-field="iqamah_time"
-                        data-original="<%= iqamahVal %>"
-                        value="<%= iqamahVal %>"
-                        placeholder="<%= iqamahPlaceholder %>"
-                        <% if (ruleIqamah) { %>title="Rule: <%= ruleIqamah %>"<% } %>
+                        data-original="<%= iqamahDisplay %>"
+                        data-source="<%= iqamahCellType %>"
+                        value="<%= iqamahDisplay %>"
+                        <% if (ruleIqamah) { %>title="Standard: <%= ruleIqamah %>"<% } %>
                         onchange="trackChange(this)">
                     </td>
                     <% } %>
@@ -242,6 +245,7 @@ function trackChange(input) {
   var prayer = input.dataset.prayer;
   var field = input.dataset.field;
   var original = input.dataset.original || '';
+  var source = input.dataset.source || '';
   var value = input.value || '';
   var key = date + '|' + prayer + '|' + field;
 
@@ -249,7 +253,7 @@ function trackChange(input) {
     dirtyMap.delete(key);
     input.classList.remove('monthly-cell-dirty');
   } else {
-    dirtyMap.set(key, { date: date, prayer: prayer, field: field, value: value });
+    dirtyMap.set(key, { date: date, prayer: prayer, field: field, value: value, source: source });
     input.classList.add('monthly-cell-dirty');
   }
   updateChangeCounter();
